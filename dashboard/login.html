@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Selfmade Labs – Login</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #e5e7eb;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      height: 100vh;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+    .card {
+      background: #020617;
+      padding: 28px;
+      border-radius: 16px;
+      width: 340px;
+      border: 1px solid #1f2937;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+    h1 {
+      margin: 0 0 6px;
+    }
+    .sub {
+      color: #9ca3af;
+      font-size: 0.85rem;
+      margin-bottom: 18px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      margin-bottom: 12px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      border-radius: 999px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      background: #22c55e;
+      color: #022c22;
+    }
+    .error {
+      color: #f87171;
+      font-size: 0.8rem;
+      display: none;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Selfmade Labs</h1>
+    <div class="sub">Admin / User Login</div>
+
+    <input id="username" placeholder="Username" />
+    <input id="password" type="password" placeholder="Password" />
+
+    <button onclick="login()">Login</button>
+    <div class="error" id="error">Invalid credentials</div>
+  </div>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+
+    async function login() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const error = document.getElementById("error");
+
+      error.style.display = "none";
+
+      try {
+        const res = await fetch(`${API}/auth/login`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          error.style.display = "block";
+          return;
+        }
+
+        localStorage.setItem("token", data.access_token);
+        window.location.href = "dashboard.html";
+      } catch {
+        error.style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>
