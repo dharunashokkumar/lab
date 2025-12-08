@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Selfmade Labs Dashboard</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #020617;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      width: 360px;
+      border: 1px solid #1f2937;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin: 0 0 4px;
+    }
+    .subtitle {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+      color: #9ca3af;
+    }
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    input:focus {
+      border-color: #60a5fa;
+    }
+    .buttons {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    button {
+      flex: 1;
+      padding: 8px 0;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.2s;
+    }
+    button:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+    .btn-start {
+      background: #22c55e;
+      color: #022c22;
+      box-shadow: 0 8px 20px rgba(34, 197, 94, 0.35);
+    }
+    .btn-start:disabled {
+      background: #14532d;
+      color: #6ee7b7;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .btn-stop {
+      background: #ef4444;
+      color: #fef2f2;
+      box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
+    }
+    .btn-stop:disabled {
+      background: #7f1d1d;
+      color: #fecaca;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .status-box {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+    .status-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+    .status-value {
+      font-weight: 500;
+    }
+    .status-ok {
+      color: #4ade80;
+    }
+    .status-bad {
+      color: #f97373;
+    }
+    .status-warn {
+      color: #facc15;
+    }
+    .field-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
+    .field-row span {
+      color: #9ca3af;
+    }
+    .field-row strong {
+      color: #e5e7eb;
+    }
+    .small {
+      font-size: 0.7rem;
+      color: #6b7280;
+      margin-top: 8px;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Selfmade Labs</h1>
+    <div class="subtitle">Local testing dashboard (Ubuntu VM)</div>
+
+    <label for="userId">User ID</label>
+    <input id="userId" type="text" value="dharun" />
+
+    <div class="buttons">
+      <button id="btnStart" class="btn-start">Start Lab</button>
+      <button id="btnStop" class="btn-stop" disabled>Stop Lab</button>
+    </div>
+
+    <div class="status-box">
+      <div class="status-label">Status</div>
+      <div id="statusText" class="status-value status-warn">
+        Idle – no lab running
+      </div>
+
+      <div class="field-row">
+        <span>Port:</span>
+        <strong id="portValue">-</strong>
+      </div>
+      <div class="field-row">
+        <span>SSH User:</span>
+        <strong>student</strong>
+      </div>
+      <div class="field-row">
+        <span>Password:</span>
+        <strong>student123</strong>
+      </div>
+    </div>
+
+    <div class="small">
+      Backend: <code>http://127.0.0.1:8000</code>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+
+    const userInput = document.getElementById("userId");
+    const btnStart = document.getElementById("btnStart");
+    const btnStop = document.getElementById("btnStop");
+    const statusText = document.getElementById("statusText");
+    const portValue = document.getElementById("portValue");
+
+    function setStatus(text, type = "warn") {
+      statusText.textContent = text;
+      statusText.className = "status-value";
+      if (type === "ok") statusText.classList.add("status-ok");
+      else if (type === "bad") statusText.classList.add("status-bad");
+      else statusText.classList.add("status-warn");
+    }
+
+    async function startLab() {
+      const userId = userInput.value.trim() || "dharun";
+      btnStart.disabled = true;
+      setStatus("Starting lab...", "warn");
+
+      try {
+        const res = await fetch(`${API_BASE}/start-lab/${userId}`, {
+          method: "POST",
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          setStatus(`Error: ${data.error}`, "bad");
+          btnStart.disabled = false;
+          btnStop.disabled = false;
+          if (data.port) {
+            portValue.textContent = data.port;
+          }
+          return;
+        }
+
+        portValue.textContent = data.port || "-";
+        setStatus(
+          `Lab running on port ${data.port} (auto-stop in ${data.expires_in_minutes || "?"} min)`,
+          "ok"
+        );
+        btnStop.disabled = false;
+      } catch (err) {
+        console.error(err);
+        setStatus("Failed to contact backend", "bad");
+        btnStart.disabled = false;
+      }
+    }
+
+    async function stopLab() {
+      const userId = userInput.value.trim() || "dharun";
+      btnStop.disabled = true;
+      setStatus("Stopping lab...", "warn");
+
+      try {
+        const res = await fetch(`${API_BASE}/stop-lab/${userId}`, {
+          method: "POST",
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          setStatus(`Error: ${data.error}`, "bad");
+          btnStop.disabled = false;
+          return;
+        }
+
+        setStatus("Lab stopped. No lab running.", "warn");
+        portValue.textContent = "-";
+        btnStart.disabled = false;
+      } catch (err) {
+        console.error(err);
+        setStatus("Failed to contact backend", "bad");
+        btnStop.disabled = false;
+      }
+    }
+
+    btnStart.addEventListener("click", startLab);
+    btnStop.addEventListener("click", stopLab);
+    async function refreshStatus() {
+  const userId = userInput.value.trim() || "dharun";
+
+  try {
+    const res = await fetch(`${API_BASE}/lab-status/${userId}`);
+    const data = await res.json();
+
+    if (!data.running) {
+      setStatus("Idle – no lab running", "warn");
+      portValue.textContent = "-";
+      btnStart.disabled = false;
+      btnStop.disabled = true;
+      return;
+    }
+
+    portValue.textContent = data.port;
+    setStatus(`Lab running on port ${data.port}`, "ok");
+    btnStart.disabled = true;
+    btnStop.disabled = false;
+  } catch {
+    setStatus("Backend unreachable", "bad");
+  }
+}
+refreshStatus();
+setInterval(refreshStatus, 5000);
+
+  </script>
+</body>
+</html>
