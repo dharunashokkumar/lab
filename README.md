@@ -1,268 +1,234 @@
-# Self-Made Labs Platform
 
-Self-Made Labs is a backend-first lab orchestration platform that allows users to spin up isolated practice environments (labs) on demand using Docker.  
-The platform is designed for learning, testing, and experimentation — not CTFs or challenge-based scoring.
+# Selfmade Labs Platform 🚀
 
-This project is currently in **local beta (VM-based testing)** and is being prepared for **public beta**.
+Selfmade Labs is a **self-hosted lab orchestration platform** that allows authenticated users to spin up isolated, time-limited practice labs (starting with Ubuntu SSH) using Docker.
+
+This project is built as a **real backend-first product**, not a demo or tutorial, and is currently in **private beta**.
 
 ---
 
-## 🎯 Project Goals
+## 🔑 Key Features
 
-- Provide **on-demand Linux labs** (SSH-based)
-- Ensure **isolation per user**
-- Automatically **clean up resources**
-- Be **simple, controllable, and extensible**
-- Start small (classmates) → scale to public users
+- ✅ JWT-based authentication
+- ✅ Admin-controlled access
+- ✅ Secure, per-user labs
+- ✅ Docker-based isolation
+- ✅ Auto lab cleanup (timeouts)
+- ✅ Live dashboard (HTML + JS)
+- ✅ GitHub-based dev workflow
 
 ---
 
 ## 🧠 High-Level Architecture
 
-[ User / Browser / CLI ]
-|
-| HTTP (REST API)
-v
-[ FastAPI Backend (Python) ]
-|
-| State & Metadata
-v
-[ MongoDB ]
-|
-| Container Control
-v
-[ Docker Engine ]
-|
-v
-[ Lab Containers (Ubuntu, MySQL, etc.) ]
-|
-v
-[ User connects via SSH ]
+```
 
+Browser (UI)
+│
+│  HTTP (JWT Auth)
+▼
+FastAPI Backend
+│
+├── MongoDB (users, lab state)
+├── Docker Engine
+│     └── Lab Containers (Ubuntu SSH)
+│
+└── Static UI (/ui)
+
+```
 
 ---
 
-## 🧩 Core Components
+## 🧩 Tech Stack
 
-### 1️⃣ Backend API (FastAPI)
-- Language: **Python**
-- Framework: **FastAPI**
-- Responsibilities:
-  - Start / Stop labs
-  - Track lab state
-  - Prevent duplicate labs
-  - Enforce auto-timeouts
-  - Act as a single control plane
+### Backend
+- Python 3.12
+- FastAPI
+- MongoDB
+- Docker
+- JWT (python-jose)
+- passlib (bcrypt)
 
----
+### Frontend
+- Plain HTML
+- CSS (dark UI)
+- Vanilla JavaScript
+- Served via FastAPI static routing
 
-### 2️⃣ Lab Engine (Docker-based)
-- Each lab runs as **one Docker container per user**
-- Containers are:
-  - Non-privileged
-  - Port-mapped dynamically
-  - Destroyed after use
-
-Example:
-
-lab_dharun → ubuntu-ssh-lab → port 2283
-
+### Dev & Infra
+- Git + GitHub
+- Ubuntu VM (server)
+- Windows (development machine)
 
 ---
 
-### 3️⃣ Database (MongoDB)
-MongoDB stores **state**, not heavy data.
+## 🔐 Authentication Model
 
-Collections:
-- `users` (future)
-- `labs` (lab templates)
-- `lab_instances` (running / stopped labs)
+- Admin and users authenticate via **JWT tokens**
+- Tokens are stored in browser `localStorage`
+- All lab APIs are **protected**
+- Unauthorized requests return `401 / 403`
 
-Example lab instance document:
+### Auth Endpoints
+```
+
+POST /auth/login
+POST /auth/register-admin   (disabled later for public beta)
+
+````
+
+---
+
+## 🧪 Lab System
+
+### Current Lab
+- Ubuntu 22.04 SSH lab
+- One container per user
+- Dynamic port allocation
+
+### Lab Lifecycle
+1. User clicks **Start Lab**
+2. Docker container is created
+3. SSH credentials are shown
+4. Lab auto-expires after fixed time
+5. Container is destroyed
+
+### Example SSH Access
+```bash
+ssh student@127.0.0.1 -p 22XX
+Password: student123
+````
+
+---
+
+## 📊 Database Collections (MongoDB)
+
+### users
 
 ```json
 {
-  "user_id": "dharun",
+  "username": "admin",
+  "password": "<bcrypt_hash>",
+  "role": "admin",
+  "created_at": "ISO_DATE"
+}
+```
+
+### lab_instances
+
+```json
+{
+  "user_id": "admin",
   "lab": "ubuntu-ssh",
-  "container": "lab_dharun",
+  "container": "lab_admin",
   "port": 2283,
   "status": "running",
-  "started_at": "2025-01-01T10:30:00Z"
+  "started_at": "ISO_DATE"
 }
+```
 
-4️⃣ Auto Cleanup System
+---
 
-    Every lab has a time limit (default: 30 minutes)
+## 🖥️ Dashboard (UI)
 
-    Implemented using Python threading.Timer
+The UI is served from FastAPI:
 
-    Prevents:
+```
+/ui/login.html
+/ui/dashboard.html
+```
 
-        Resource abuse
+### Dashboard Features
 
-        Forgotten running labs
+* Login / Logout
+* Start / Stop lab
+* Live lab status
+* SSH command display
+* Auto-refresh (every 5s)
 
-        Server overload
+---
 
-Statuses:
+## ▶️ How to Run (Local / VM)
 
-    running
+### 1️⃣ Start Backend
 
-    stopped
-
-    auto-stopped
-
-5️⃣ Frontend (HTML/CSS Dashboard)
-
-    Simple static dashboard
-
-    Communicates with backend via Fetch API
-
-    No framework (intentionally)
-
-    Used for:
-
-        Starting labs
-
-        Stopping labs
-
-        Viewing connection info
-
-🔐 Security Model (Current)
-
-✅ One container per user
-✅ No shared containers
-✅ No privileged Docker access
-✅ Time-limited labs
-✅ No direct host access from containers
-
-Authentication & authorization are next planned features.
-🧪 Current Features (Implemented)
-
-    ✅ Ubuntu SSH Lab
-
-    ✅ Dynamic port allocation
-
-    ✅ Start / Stop lab via API
-
-    ✅ Auto-stop after timeout
-
-    ✅ MongoDB state persistence
-
-    ✅ Simple dashboard
-
-    ✅ Manual SSH access
-
-🚧 Planned Features (Public Beta Roadmap)
-Phase 1 – Admin & Auth (NEXT)
-
-    Admin login
-
-    User authentication (JWT)
-
-    Role-based access (admin / user)
-
-    Admin-only lab creation
-
-Phase 2 – Multiple Labs
-
-    MySQL lab
-
-    Web server lab
-
-    Docker practice lab
-
-    Lab catalog UI
-
-Phase 3 – Public Beta Hardening
-
-    Rate limiting
-
-    Firewall rules
-
-    Server migration (bare metal / VPS)
-
-    Logging & monitoring
-
-🖥️ Development Environment
-
-    Host: Ubuntu VM (VirtualBox)
-
-    Python: 3.12 (venv)
-
-    Docker: Engine
-
-    MongoDB: Community Edition
-
-    OS tested: Ubuntu 22.04 LTS
-
-▶️ How to Run (Local Testing)
-Backend
-
+```bash
 source venv/bin/activate
 uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
 
-Dashboard
+### 2️⃣ Open UI
 
-xdg-open dashboard/index.html
-
-Connect to Lab
-
-ssh student@<server-ip> -p <port>
-
-Password:
-
-student123
-
-🧠 Design Philosophy
-
-    Backend-first
-
-    Explicit over magic
-
-    Docker before VMs
-
-    Simple systems > complex frameworks
-
-    Build small → scale later
-
-📌 Status
-
-✅ Core platform functional
-✅ Architecture validated
-🚧 Admin & auth in progress
-🚀 Preparing for public beta
-
+```
+http://127.0.0.1:8000/ui/login.html
+```
 
 ---
 
-## ✅ Why this README is IMPORTANT
+## 🧑‍💻 Development Workflow
 
-- Another AI can now:
-  - Understand architecture
-  - Suggest changes correctly
-  - Not break core logic
+### Initial Push (Ubuntu VM)
 
-- You can now:
-  - Explain your system confidently
-  - Share repo without confusion
-  - Resume work months later
+```bash
+git init
+git add .
+git commit -m "Initial Selfmade Labs platform"
+git push origin main
+```
+
+### Daily Workflow
+
+* ✅ Develop on Windows
+* ✅ Push to GitHub
+* ✅ Pull & run on Ubuntu VM
+
+```bash
+git pull
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
 
 ---
 
-## 🚀 NEXT STEP (as you asked)
+## 🧠 Design Principles
 
-Now we move to **Admin Panel + Auth System**, in the **correct order**:
+* Backend-first architecture
+* Explicit > magic
+* Secure-by-default
+* Docker over VMs
+* Same-origin UI + API
+* Simple UI, powerful backend
 
-### ✅ Order we will follow (important)
-1. **JWT Authentication**
-2. **User roles (admin / user)**
-3. **Admin-protected APIs**
-4. **Admin dashboard**
-5. **Public beta hardening**
+---
 
-If you agree, next reply with:
+## 🚧 Current Status
 
-👉 **“Start Auth System”**
+✅ Core platform complete
+✅ Auth system stable
+✅ Dashboard stable
+✅ Lab orchestration verified
 
-and I’ll build it with you step-by-step, clean and production-ready.
+---
+
+## 🛣️ Roadmap
+
+### Phase 1 (Next)
+
+* Admin UI to create users
+* Disable admin self-registration
+* User role enforcement
+
+### Phase 2
+
+* Multiple lab types (MySQL, Web, Docker)
+* Lab catalog UI
+
+### Phase 3
+
+* Public beta hardening
+* Rate limits
+* Firewall rules
+* Monitoring & logs
+
+---
+
+
