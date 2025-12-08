@@ -53,7 +53,7 @@
 </div>
 
 <script>
-  const API = "http://127.0.0.1:8000";
+  
   const token = localStorage.getItem("token");
 
   if (!token) {
@@ -61,51 +61,80 @@
   }
 
   function authHeaders() {
-    return {
-      "Authorization": "Bearer " + token
-    };
-  }
+  return {
+    "Authorization": "Bearer " + token,
+    "Content-Type": "application/json"
+  };
+}
+
 
   async function refreshStatus() {
-    try {
-      const res = await fetch(`${API}/lab-status`, {
-        headers: authHeaders()
-      });
+  const statusEl = document.getElementById("status");
+  const portEl = document.getElementById("port");
 
-      if (!res.ok) throw new Error();
+  try {
+    const res = await fetch("/lab-status", {
+      headers: authHeaders()
+    });
 
-      const data = await res.json();
-
-      if (!data.running) {
-        document.getElementById("status").innerText = "No lab running";
-        document.getElementById("port").innerHTML = "";
-        return;
-      }
-
-      document.getElementById("status").innerText = "Lab running";
-      document.getElementById("port").innerHTML =
-        `SSH: <code>ssh student@127.0.0.1 -p ${data.port}</code>`;
-    } catch {
-      document.getElementById("status").innerText = "Session expired";
+    // Auth error ONLY
+    if (res.status === 401 || res.status === 403) {
+      statusEl.innerText = "Session expired";
       localStorage.removeItem("token");
+      return;
     }
+
+    // Backend reachable but returned something unexpected
+    if (!res.ok) {
+      statusEl.innerText = "Server error";
+      return;
+    }
+
+    const data = await res.json();
+
+    // ✅ Normal case: no lab
+    if (!data || data.running === false) {
+      statusEl.innerText = "No lab running";
+      portEl.innerHTML = "";
+      return;
+    }
+
+    // ✅ Lab running
+    statusEl.innerText = "Lab running ✅";
+    portEl.innerHTML =
+      `SSH: <code>ssh student@127.0.0.1 -p ${data.port}</code>`;
+
+  } catch (err) {
+    console.error("Fetch error:", err);
+    statusEl.innerText = "Backend unreachable";
   }
+}
+
 
   async function startLab() {
-    await fetch(`${API}/start-lab`, {
+  try {
+    await fetch("/start-lab", {
       method: "POST",
       headers: authHeaders()
     });
     refreshStatus();
+  } catch (e) {
+    console.error(e);
   }
+}
 
-  async function stopLab() {
-    await fetch(`${API}/stop-lab`, {
+async function stopLab() {
+  try {
+    await fetch("/stop-lab", {
       method: "POST",
       headers: authHeaders()
     });
     refreshStatus();
+  } catch (e) {
+    console.error(e);
   }
+}
+
 
   function logout() {
     localStorage.removeItem("token");

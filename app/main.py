@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
 
 from app.lab_controller import start_ubuntu_lab, stop_lab, get_lab_status
 from app.auth import (
@@ -65,3 +66,8 @@ def api_stop_lab(current_user: dict = Depends(get_current_user)):
 @app.get("/lab-status")
 def api_lab_status(current_user: dict = Depends(get_current_user)):
     return get_lab_status(current_user["username"])
+
+
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/ui", StaticFiles(directory="static", html=True), name="static")
