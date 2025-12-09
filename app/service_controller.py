@@ -1,269 +1,453 @@
 """
-Service Controller - Manages database/messaging services
-MySQL, PostgreSQL, MongoDB, Redis, RabbitMQ
+Service Controller - Shared Container Architecture
+Creates ONE shared container per service type, multiple user databases per container
 """
 import subprocess
-import random
+import secrets
 import string
-import threading
+import hashlib
 from datetime import datetime
-from app.db import service_instances, service_catalog
+from app.db import service_instances
 from app.notifications import create_notification
 
-SERVICE_TIME_LIMIT = 60 * 60  # 60 minutes (longer than labs)
+# Shared container names (one per service type)
+SHARED_CONTAINERS = {
+    "mysql": "selfmade-mysql-shared",
+    "postgresql": "selfmade-postgresql-shared",
+    "mongodb": "selfmade-mongodb-shared",
+    "redis": "selfmade-redis-shared",
+    "rabbitmq": "selfmade-rabbitmq-shared"
+}
+
+# Service configurations
+SERVICE_CONFIGS = {
+    "mysql": {
+        "image": "mysql:8",
+        "port": 3306,
+        "internal_port": 3306,
+        "root_password": "selfmade_root_pass_2024"
+    },
+    "postgresql": {
+        "image": "postgres:16",
+        "port": 5432,
+        "internal_port": 5432,
+        "root_password": "selfmade_root_pass_2024"
+    },
+    "mongodb": {
+        "image": "mongo:7.0",
+        "port": 27018,  # Different from main MongoDB on 27017
+        "internal_port": 27017,
+        "root_password": "selfmade_root_pass_2024"
+    },
+    "redis": {
+        "image": "redis:7-alpine",
+        "port": 6379,
+        "internal_port": 6379,
+        "root_password": "selfmade_root_pass_2024"
+    },
+    "rabbitmq": {
+        "image": "rabbitmq:3-management",
+        "port": 5672,
+        "management_port": 15673,
+        "internal_port": 5672,
+        "root_password": "selfmade_root_pass_2024"
+    }
+}
 
 def generate_password(length=16):
     """Generate secure random password"""
-    chars = string.ascii_letters + string.digits
-    return ''.join(random.choice(chars) for _ in range(length))
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
-def auto_stop_service_timer(container_name, instance_id):
-    """Auto-stop service after time limit"""
+def hash_email(email: str) -> str:
+    """Generate short hash from email for database names"""
+    return hashlib.md5(email.encode()).hexdigest()[:8]
+
+def ensure_shared_container_running(service_id: str) -> bool:
+    """Ensure shared container for service type is running"""
+    container_name = SHARED_CONTAINERS[service_id]
+    config = SERVICE_CONFIGS[service_id]
+
+    # Check if container exists and is running
+    check_cmd = f"docker ps -q -f name={container_name}"
+    result = subprocess.run(check_cmd, shell=True, capture_output=True, text=True)
+
+    if result.stdout.strip():
+        # Container is running
+        return True
+
+    # Check if container exists but is stopped
+    check_stopped = f"docker ps -aq -f name={container_name}"
+    result_stopped = subprocess.run(check_stopped, shell=True, capture_output=True, text=True)
+
+    if result_stopped.stdout.strip():
+        # Container exists, start it
+        print(f"Starting existing shared container: {container_name}")
+        start_cmd = f"docker start {container_name}"
+        subprocess.run(start_cmd, shell=True)
+        return True
+
+    # Create new shared container
+    print(f"Creating new shared container: {container_name}")
+
+    if service_id == "mysql":
+        cmd = (
+            f"docker run -d "
+            f"--name {container_name} "
+            f"-p {config['port']}:{config['internal_port']} "
+            f"-e MYSQL_ROOT_PASSWORD={config['root_password']} "
+            f"{config['image']}"
+        )
+    elif service_id == "postgresql":
+        cmd = (
+            f"docker run -d "
+            f"--name {container_name} "
+            f"-p {config['port']}:{config['internal_port']} "
+            f"-e POSTGRES_PASSWORD={config['root_password']} "
+            f"{config['image']}"
+        )
+    elif service_id == "mongodb":
+        cmd = (
+            f"docker run -d "
+            f"--name {container_name} "
+            f"-p {config['port']}:{config['internal_port']} "
+            f"-e MONGO_INITDB_ROOT_USERNAME=admin "
+            f"-e MONGO_INITDB_ROOT_PASSWORD={config['root_password']} "
+            f"{config['image']}"
+        )
+    elif service_id == "redis":
+        cmd = (
+            f"docker run -d "
+            f"--name {container_name} "
+            f"-p {config['port']}:{config['internal_port']} "
+            f"{config['image']} "
+            f"redis-server --requirepass {config['root_password']}"
+        )
+    elif service_id == "rabbitmq":
+        cmd = (
+            f"docker run -d "
+            f"--name {container_name} "
+            f"-p {config['port']}:{config['internal_port']} "
+            f"-p {config['management_port']}:15672 "
+            f"-e RABBITMQ_DEFAULT_USER=admin "
+            f"-e RABBITMQ_DEFAULT_PASS={config['root_password']} "
+            f"{config['image']}"
+        )
+    else:
+        return False
+
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print(f"Error creating shared container: {result.stderr}")
+        return False
+
+    # Wait for container to be ready
     import time
-    time.sleep(SERVICE_TIME_LIMIT)
+    time.sleep(3)
 
-    # Re-check status before stopping
-    current = service_instances.find_one({"_id": instance_id})
-    if current and current["status"] == "running":
-        print(f"Auto-stopping service: {container_name}")
-        subprocess.run(["docker", "stop", container_name], check=False)
-        subprocess.run(["docker", "rm", container_name], check=False)
-        service_instances.update_one(
-            {"_id": instance_id},
-            {"$set": {"status": "auto-stopped", "stopped_at": datetime.utcnow()}}
+    return True
+
+def create_user_database(service_id: str, user_email: str, db_name: str, user_password: str):
+    """Create user-specific database in shared container"""
+    container_name = SHARED_CONTAINERS[service_id]
+    config = SERVICE_CONFIGS[service_id]
+
+    if service_id == "mysql":
+        # Create database and user
+        sql_commands = f"""
+        CREATE DATABASE IF NOT EXISTS {db_name};
+        CREATE USER IF NOT EXISTS '{db_name}'@'%' IDENTIFIED BY '{user_password}';
+        GRANT ALL PRIVILEGES ON {db_name}.* TO '{db_name}'@'%';
+        FLUSH PRIVILEGES;
+        """
+        cmd = f'docker exec {container_name} mysql -uroot -p{config["root_password"]} -e "{sql_commands}"'
+
+    elif service_id == "postgresql":
+        # Create database and user
+        cmd = (
+            f'docker exec {container_name} psql -U postgres -c '
+            f'"CREATE DATABASE {db_name};" && '
+            f'docker exec {container_name} psql -U postgres -c '
+            f'"CREATE USER {db_name} WITH PASSWORD \'{user_password}\';" && '
+            f'docker exec {container_name} psql -U postgres -c '
+            f'"GRANT ALL PRIVILEGES ON DATABASE {db_name} TO {db_name};"'
         )
 
-        # Notify user
-        instance = service_instances.find_one({"_id": instance_id})
-        if instance:
-            create_notification(
-                instance["user_email"],
-                "service_stopped",
-                "Service Auto-Stopped",
-                f"Your {instance['service_name']} service was automatically stopped after 60 minutes",
-                {"service_id": instance["service_id"]}
-            )
+    elif service_id == "mongodb":
+        # Create database (will be created on first use, but we can create user)
+        mongo_cmd = f"""
+        db = db.getSiblingDB('{db_name}');
+        db.createUser({{
+            user: '{db_name}',
+            pwd: '{user_password}',
+            roles: [{{ role: 'readWrite', db: '{db_name}' }}]
+        }});
+        """
+        cmd = f'docker exec {container_name} mongosh -u admin -p {config["root_password"]} --authenticationDatabase admin --eval "{mongo_cmd}"'
+
+    else:
+        # Redis and RabbitMQ don't need database creation
+        return True
+
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print(f"Error creating user database: {result.stderr}")
+        return False
+
+    return True
 
 def start_service(user_email: str, service_id: str):
-    """Start a database/messaging service"""
-    # Get service config
-    service_config = service_catalog.find_one({"id": service_id})
-    if not service_config:
-        return {"error": "Invalid service ID"}
+    """Start a service for user (create user database in shared container)"""
 
-    # Generate credentials
-    password = generate_password()
+    # Check if user already has this service running
+    existing = service_instances.find_one({
+        "user_email": user_email,
+        "service": service_id,
+        "status": "running"
+    })
 
-    # Random port assignment
-    base_port = service_config["port"]
-    port = random.randint(base_port, base_port + 100)
+    if existing:
+        return {
+            "error": f"You already have {service_id} running. Stop it first before starting a new one.",
+            "existing_service": existing
+        }
 
-    # Container name
-    container = f"service_{user_email.split('@')[0]}_{service_id}_{random.randint(100,999)}"
+    # Ensure shared container is running
+    if not ensure_shared_container_running(service_id):
+        return {"error": f"Failed to start shared {service_id} container"}
 
-    # Build Docker command
-    cmd = [
-        "docker", "run", "-d",
-        "--name", container,
-        "-p", f"{port}:{service_config['port']}"
-    ]
+    config = SERVICE_CONFIGS[service_id]
 
-    # Add environment variables
-    env_template = service_config.get("env_template", {})
-    for key, value_template in env_template.items():
-        value = value_template.replace("{password}", password)
-        cmd.extend(["-e", f"{key}={value}"])
+    # Generate user-specific database name and credentials
+    email_hash = hash_email(user_email)
+    db_name = f"user_{email_hash}"
+    db_password = generate_password()
 
-    # Add image
-    cmd.append(service_config["image"])
+    # Create user database (for MySQL, PostgreSQL, MongoDB)
+    if service_id in ["mysql", "postgresql", "mongodb"]:
+        if not create_user_database(service_id, user_email, db_name, db_password):
+            return {"error": f"Failed to create user database in {service_id}"}
 
-    # Run container
-    try:
-        subprocess.run(cmd, check=True, capture_output=True)
-    except subprocess.CalledProcessError as e:
-        return {"error": "Failed to start service", "details": str(e)}
+    # For Redis, assign a DB number (0-15)
+    redis_db = None
+    if service_id == "redis":
+        # Get all Redis instances and find unused DB number
+        redis_instances = list(service_instances.find({
+            "service": "redis",
+            "status": "running"
+        }))
+        used_dbs = [inst.get("credentials", {}).get("database", 0) for inst in redis_instances]
+        redis_db = next((i for i in range(16) if i not in used_dbs), 0)
+
+    # For RabbitMQ, create virtual host
+    rabbitmq_vhost = None
+    if service_id == "rabbitmq":
+        rabbitmq_vhost = f"/user_{email_hash}"
+        # Create virtual host
+        container_name = SHARED_CONTAINERS[service_id]
+        vhost_cmd = f'docker exec {container_name} rabbitmqctl add_vhost {rabbitmq_vhost}'
+        subprocess.run(vhost_cmd, shell=True)
+        # Set permissions
+        perm_cmd = f'docker exec {container_name} rabbitmqctl set_permissions -p {rabbitmq_vhost} admin ".*" ".*" ".*"'
+        subprocess.run(perm_cmd, shell=True)
+
+    # Build credentials and connection info
+    credentials = {
+        "host": "localhost",
+        "port": config["port"]
+    }
+
+    if service_id in ["mysql", "postgresql", "mongodb"]:
+        credentials["username"] = db_name
+        credentials["password"] = db_password
+        credentials["database"] = db_name
+    elif service_id == "redis":
+        credentials["password"] = config["root_password"]
+        credentials["database"] = redis_db
+    elif service_id == "rabbitmq":
+        credentials["username"] = "admin"
+        credentials["password"] = config["root_password"]
+        credentials["vhost"] = rabbitmq_vhost
 
     # Build connection string
-    connection_info = build_connection_info(service_id, port, password)
+    connection_string = build_connection_string(service_id, credentials)
 
-    # Store instance in database
-    instance_data = {
+    # Save service instance to database
+    service_data = {
         "user_email": user_email,
-        "service_id": service_id,
-        "service_name": service_config["name"],
-        "container": container,
-        "port": port,
-        "credentials": {
-            "host": "localhost",
-            "port": port,
-            "username": connection_info.get("username", "root"),
-            "password": password,
-            "connection_string": connection_info.get("connection_string", "")
+        "service": service_id,
+        "service_name": service_id.upper(),
+        "container": SHARED_CONTAINERS[service_id],  # Shared container name
+        "port": config["port"],
+        "credentials": credentials,
+        "connection_info": {
+            "host": credentials["host"],
+            "port": credentials["port"],
+            "connection_string": connection_string
         },
         "status": "running",
         "started_at": datetime.utcnow()
     }
 
-    # Handle RabbitMQ management port
-    if service_id == "rabbitmq" and "management_port" in service_config:
-        mgmt_port = random.randint(15672, 15700)
-        # Restart container with management port
-        subprocess.run(["docker", "stop", container], check=False)
-        subprocess.run(["docker", "rm", container], check=False)
+    result = service_instances.insert_one(service_data)
+    service_data["_id"] = str(result.inserted_id)
 
-        cmd_with_mgmt = [
-            "docker", "run", "-d",
-            "--name", container,
-            "-p", f"{port}:5672",
-            "-p", f"{mgmt_port}:15672"
-        ]
-        cmd_with_mgmt.append(service_config["image"])
-        subprocess.run(cmd_with_mgmt, check=True, capture_output=True)
-
-        instance_data["management_port"] = mgmt_port
-        instance_data["credentials"]["management_url"] = f"http://localhost:{mgmt_port}"
-
-    res = service_instances.insert_one(instance_data)
-
-    # Start auto-stop timer
-    threading.Thread(
-        target=auto_stop_service_timer,
-        args=(container, res.inserted_id),
-        daemon=True
-    ).start()
-
-    # Notify user
+    # Create notification
     create_notification(
-        user_email,
-        "service_started",
-        "Service Started",
-        f"Your {service_config['name']} service is now running",
-        {"service_id": service_id, "port": port}
+        user_email=user_email,
+        notif_type="service_started",
+        title=f"{service_id.upper()} Started",
+        message=f"Your {service_id} database is ready to use",
+        metadata={"service_id": service_id, "port": config["port"]}
     )
 
-    return {
-        "status": "started",
-        "service": service_config["name"],
-        "credentials": instance_data["credentials"]
-    }
+    return service_data
 
-def build_connection_info(service_id: str, port: int, password: str):
-    """Build service-specific connection information"""
+def build_connection_string(service_id: str, credentials: dict) -> str:
+    """Build connection string for service"""
+    host = credentials["host"]
+    port = credentials["port"]
+
     if service_id == "mysql":
-        return {
-            "username": "root",
-            "connection_string": f"mysql://root:{password}@localhost:{port}/mysql"
-        }
+        user = credentials["username"]
+        password = credentials["password"]
+        database = credentials["database"]
+        return f"mysql://{user}:{password}@{host}:{port}/{database}"
+
     elif service_id == "postgresql":
-        return {
-            "username": "postgres",
-            "connection_string": f"postgresql://postgres:{password}@localhost:{port}/postgres"
-        }
+        user = credentials["username"]
+        password = credentials["password"]
+        database = credentials["database"]
+        return f"postgresql://{user}:{password}@{host}:{port}/{database}"
+
     elif service_id == "mongodb":
-        return {
-            "username": "",
-            "connection_string": f"mongodb://localhost:{port}/"
-        }
+        user = credentials["username"]
+        password = credentials["password"]
+        database = credentials["database"]
+        return f"mongodb://{user}:{password}@{host}:{port}/{database}"
+
     elif service_id == "redis":
-        return {
-            "username": "",
-            "connection_string": f"redis://localhost:{port}"
-        }
+        password = credentials["password"]
+        database = credentials["database"]
+        return f"redis://:{password}@{host}:{port}/{database}"
+
     elif service_id == "rabbitmq":
-        return {
-            "username": "guest",
-            "connection_string": f"amqp://guest:guest@localhost:{port}/"
-        }
-    else:
-        return {"username": "", "connection_string": ""}
+        user = credentials["username"]
+        password = credentials["password"]
+        vhost = credentials["vhost"]
+        return f"amqp://{user}:{password}@{host}:{port}{vhost}"
+
+    return f"{host}:{port}"
 
 def stop_service(user_email: str, service_id: str):
-    """Stop a running service"""
-    # Find running service
-    query = {"user_email": user_email, "service_id": service_id, "status": "running"}
-    service = service_instances.find_one(query)
+    """Stop a service (delete user database from shared container)"""
 
-    if not service:
-        return {"error": "Service not found or not running"}
-
-    container = service["container"]
-
-    try:
-        subprocess.run(["docker", "stop", container], check=False)
-        subprocess.run(["docker", "rm", container], check=False)
-    except Exception as e:
-        print(f"Error stopping service: {e}")
-
-    # Update status
-    service_instances.update_one(
-        {"_id": service["_id"]},
-        {"$set": {
-            "status": "stopped",
-            "stopped_at": datetime.utcnow()
-        }}
-    )
-
-    # Notify user
-    create_notification(
-        user_email,
-        "service_stopped",
-        "Service Stopped",
-        f"Your {service['service_name']} service has been stopped",
-        {"service_id": service_id}
-    )
-
-    return {"message": "Service stopped", "service": service["service_name"]}
-
-def get_service_status(user_email: str):
-    """Get all running services for user"""
-    cursor = service_instances.find(
-        {"user_email": user_email, "status": "running"},
-        {"_id": 0}
-    )
-    return list(cursor)
-
-def get_service_credentials(user_email: str, service_id: str):
-    """Get credentials for a running service"""
-    service = service_instances.find_one({
+    # Find user's service instance
+    instance = service_instances.find_one({
         "user_email": user_email,
-        "service_id": service_id,
+        "service": service_id,
         "status": "running"
     })
 
-    if not service:
-        return {"error": "Service not found or not running"}
+    if not instance:
+        return {"error": f"No running {service_id} service found"}
 
-    return {
-        "service": service["service_name"],
-        "credentials": service["credentials"]
-    }
+    container_name = SHARED_CONTAINERS[service_id]
+    config = SERVICE_CONFIGS[service_id]
 
-def list_service_catalog():
-    """List all available services"""
-    return list(service_catalog.find({}, {"_id": 0}))
+    # Delete user database (for MySQL, PostgreSQL, MongoDB)
+    if service_id in ["mysql", "postgresql", "mongodb"]:
+        db_name = instance["credentials"]["database"]
 
-def stop_all_user_services(user_email: str):
-    """Stop all running services for a user"""
-    running_services = list(service_instances.find({
+        if service_id == "mysql":
+            sql_commands = f"""
+            DROP DATABASE IF EXISTS {db_name};
+            DROP USER IF EXISTS '{db_name}'@'%';
+            FLUSH PRIVILEGES;
+            """
+            cmd = f'docker exec {container_name} mysql -uroot -p{config["root_password"]} -e "{sql_commands}"'
+            subprocess.run(cmd, shell=True)
+
+        elif service_id == "postgresql":
+            cmd = (
+                f'docker exec {container_name} psql -U postgres -c '
+                f'"DROP DATABASE IF EXISTS {db_name};" && '
+                f'docker exec {container_name} psql -U postgres -c '
+                f'"DROP USER IF EXISTS {db_name};"'
+            )
+            subprocess.run(cmd, shell=True)
+
+        elif service_id == "mongodb":
+            mongo_cmd = f"db.getSiblingDB('{db_name}').dropDatabase();"
+            cmd = f'docker exec {container_name} mongosh -u admin -p {config["root_password"]} --authenticationDatabase admin --eval "{mongo_cmd}"'
+            subprocess.run(cmd, shell=True)
+
+    # For RabbitMQ, delete virtual host
+    if service_id == "rabbitmq":
+        vhost = instance["credentials"]["vhost"]
+        cmd = f'docker exec {container_name} rabbitmqctl delete_vhost {vhost}'
+        subprocess.run(cmd, shell=True)
+
+    # Update database
+    service_instances.update_one(
+        {"_id": instance["_id"]},
+        {"$set": {"status": "stopped"}}
+    )
+
+    # Create notification
+    create_notification(
+        user_email=user_email,
+        notif_type="service_stopped",
+        title=f"{service_id.upper()} Stopped",
+        message=f"Your {service_id} database has been stopped",
+        metadata={"service_id": service_id}
+    )
+
+    return {"message": f"Service {service_id} stopped successfully"}
+
+def get_service_status(user_email: str):
+    """Get all running services for user"""
+    services = list(service_instances.find({
         "user_email": user_email,
         "status": "running"
     }))
 
-    stopped = []
-    for service in running_services:
-        try:
-            subprocess.run(["docker", "stop", service["container"]], check=False)
-            subprocess.run(["docker", "rm", service["container"]], check=False)
+    # Convert ObjectId to string
+    for service in services:
+        service["_id"] = str(service["_id"])
 
-            service_instances.update_one(
-                {"_id": service["_id"]},
-                {"$set": {
-                    "status": "stopped",
-                    "stopped_at": datetime.utcnow()
-                }}
-            )
-            stopped.append(service["service_name"])
-        except Exception as e:
-            print(f"Error stopping service {service['container']}: {e}")
+    return services
 
-    return {"message": "Services stopped", "stopped": stopped}
+def get_service_credentials(user_email: str, service_id: str):
+    """Get credentials for user's service"""
+    instance = service_instances.find_one({
+        "user_email": user_email,
+        "service": service_id,
+        "status": "running"
+    })
+
+    if not instance:
+        return {"error": "Service not found or not running"}
+
+    return {
+        "service_name": instance["service_name"],
+        "host": instance["credentials"]["host"],
+        "port": instance["credentials"]["port"],
+        "username": instance["credentials"].get("username"),
+        "password": instance["credentials"].get("password"),
+        "database": instance["credentials"].get("database"),
+        "vhost": instance["credentials"].get("vhost"),
+        "connection_string": instance["connection_info"]["connection_string"]
+    }
+
+def list_service_catalog():
+    """List available services"""
+    from app.db import service_catalog
+    services = list(service_catalog.find())
+
+    for service in services:
+        service["_id"] = str(service["_id"])
+
+    return services
