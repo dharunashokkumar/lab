@@ -3,142 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <title>Selfmade Labs – Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
   <style>
     body {
-      background: #0f172a;
-      color: #e5e7eb;
+      margin: 0;
       font-family: system-ui, sans-serif;
-      padding: 40px;
+      background: radial-gradient(circle at top, #020617, #000);
+      color: #e5e7eb;
+      min-height: 100vh;
+      padding: 32px;
     }
+
+    h1 { margin-bottom: 20px; }
+
     .top {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 24px;
+      align-items: center;
     }
-    button {
+
+    .logout {
+      background: #1f2937;
       padding: 8px 16px;
       border-radius: 999px;
-      border: none;
       cursor: pointer;
-      font-weight: 600;
     }
-    .start { background: #22c55e; color: #022c22; }
-    .stop { background: #ef4444; color: #fff; }
-    .logout { background: #1f2937; color: #e5e7eb; }
+
     .card {
-      background: #020617;
-      padding: 20px;
-      border-radius: 12px;
+      max-width: 480px;
+      background: rgba(2, 6, 23, 0.9);
       border: 1px solid #1f2937;
-      max-width: 420px;
+      border-radius: 16px;
+      padding: 20px;
     }
-    .status { margin-bottom: 8px; }
-    code { background: #020617; padding: 4px 6px; border-radius: 6px; }
+
+    .status { margin-bottom: 6px; }
+    .port { font-size: 0.85rem; color: #9ca3af; margin-bottom: 16px; }
+
+    button {
+      border-radius: 999px;
+      padding: 10px 18px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .start { background: #22c55e; }
+    .stop { background: #ef4444; margin-left: 8px; }
   </style>
 </head>
+
 <body>
 
-<div class="top">
-  <h2>Selfmade Labs</h2>
-  <button class="logout" onclick="logout()">Logout</button>
-</div>
+  <div class="top">
+    <h1>Selfmade Labs</h1>
+    <div class="logout" onclick="logout()">Logout</div>
+  </div>
 
-<div class="card">
-  <div class="status" id="status">Checking status…</div>
-  <div id="port"></div>
+  <div class="card">
+    <div id="status" class="status">Loading…</div>
+    <div id="port" class="port"></div>
 
-  <br/>
-  <button class="start" onclick="startLab()">Start Lab</button>
-  <button class="stop" onclick="stopLab()">Stop Lab</button>
-</div>
+    <button class="start" onclick="startLab()">Start Lab</button>
+    <button class="stop" onclick="stopLab()">Stop Lab</button>
+  </div>
 
 <script>
-  
   const token = localStorage.getItem("token");
 
-  if (!token) {
-    window.location.href = "login.html";
-  }
+  if (!token) location.href = "/ui/login.html";
 
-  function authHeaders() {
-  return {
-    "Authorization": "Bearer " + token,
-    "Content-Type": "application/json"
-  };
-}
-
-
-  async function refreshStatus() {
   const statusEl = document.getElementById("status");
   const portEl = document.getElementById("port");
 
-  try {
-    const res = await fetch("/lab-status", {
-      headers: authHeaders()
-    });
-
-    // Auth error ONLY
-    if (res.status === 401 || res.status === 403) {
-      statusEl.innerText = "Session expired";
-      localStorage.removeItem("token");
-      return;
-    }
-
-    // Backend reachable but returned something unexpected
-    if (!res.ok) {
-      statusEl.innerText = "Server error";
-      return;
-    }
-
-    const data = await res.json();
-
-    // ✅ Normal case: no lab
-    if (!data || data.running === false) {
-      statusEl.innerText = "No lab running";
-      portEl.innerHTML = "";
-      return;
-    }
-
-    // ✅ Lab running
-    statusEl.innerText = "Lab running ✅";
-    portEl.innerHTML =
-      `SSH: <code>ssh student@127.0.0.1 -p ${data.port}</code>`;
-
-  } catch (err) {
-    console.error("Fetch error:", err);
-    statusEl.innerText = "Backend unreachable";
+  function authHeaders() {
+    return { "Authorization": "Bearer " + token };
   }
-}
 
+  async function fetchStatus() {
+    const res = await fetch("/lab-status", { headers: authHeaders() });
+    if (!res.ok) throw new Error("API error");
+    return res.json();
+  }
+
+  async function refreshStatus() {
+    try {
+      const data = await fetchStatus();
+
+      // --- PURE UI LOGIC ONLY ---
+      if (data && data.running === true) {
+        statusEl.innerText = "Lab running ✅";
+        portEl.innerHTML = data.port
+          ? `SSH: <code>ssh student@127.0.0.1 -p ${data.port}</code>`
+          : "";
+      } else {
+        statusEl.innerText = "No lab running";
+        portEl.innerHTML = "";
+      }
+
+    } catch (e) {
+      console.error("Dashboard error:", e);
+      statusEl.innerText = "Unable to fetch lab status";
+      portEl.innerHTML = "";
+    }
+  }
 
   async function startLab() {
-  try {
-    await fetch("/start-lab", {
-      method: "POST",
-      headers: authHeaders()
-    });
-    refreshStatus();
-  } catch (e) {
-    console.error(e);
+    await fetch("/start-lab", { method: "POST", headers: authHeaders() });
+    setTimeout(refreshStatus, 500);
   }
-}
 
-async function stopLab() {
-  try {
-    await fetch("/stop-lab", {
-      method: "POST",
-      headers: authHeaders()
-    });
-    refreshStatus();
-  } catch (e) {
-    console.error(e);
+  async function stopLab() {
+    await fetch("/stop-lab", { method: "POST", headers: authHeaders() });
+    setTimeout(refreshStatus, 500);
   }
-}
-
 
   function logout() {
     localStorage.removeItem("token");
-    window.location.href = "login.html";
+    location.href = "/ui/login.html";
   }
 
   refreshStatus();
