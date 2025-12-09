@@ -2,121 +2,491 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Selfmade Labs – Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Selfmade Ninja Academy</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
   <style>
+    /* --- CSS VARIABLES & THEME --- */
+    :root {
+      --bg-body: #05050A;
+      --bg-sidebar: #090910;
+      --bg-surface: #13131F;
+      --bg-surface-hover: #1C1C2E;
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.4);
+      --accent: #22d3ee;
+      --text-main: #FFFFFF;
+      --text-muted: #94a3b8;
+      --border: #2D2D3F;
+      --green: #22c55e;
+      --red: #ef4444;
+      
+      --sidebar-width: 260px;
+      --header-height: 70px;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: system-ui, sans-serif;
-      background: radial-gradient(circle at top, #020617, #000);
-      color: #e5e7eb;
-      min-height: 100vh;
-      padding: 32px;
-    }
-
-    h1 { margin-bottom: 20px; }
-
-    .top {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-body);
+      color: var(--text-main);
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    .logout {
-      background: #1f2937;
-      padding: 8px 16px;
-      border-radius: 999px;
+    /* --- SIDEBAR --- */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 40px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .brand span { color: var(--primary); }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      color: var(--text-muted);
       cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: var(--bg-surface);
+      color: var(--text-main);
+    }
+    .nav-item.active { border-left: 3px solid var(--primary); }
+
+    .storage-info {
+      margin-top: auto;
+      background: var(--bg-surface);
+      padding: 16px;
+      border-radius: 12px;
+    }
+    .progress-bar {
+      height: 6px;
+      background: #333;
+      border-radius: 3px;
+      margin: 8px 0;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 45%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+
+    /* --- MAIN CONTENT --- */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* --- HEADER --- */
+    .header {
+      height: var(--header-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search-bar {
+      flex: 0 1 600px;
+      background: var(--bg-surface);
+      border-radius: 12px;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-muted);
+      border: 1px solid transparent;
+      transition: 0.2s;
+    }
+    .search-bar:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 15px var(--primary-glow);
+      color: var(--text-main);
+    }
+    .search-bar input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: inherit;
+      font-size: 1rem;
+      width: 100%;
+      font-family: inherit;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    /* --- CONTENT AREA --- */
+    .content {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* --- CARDS GRID --- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
     }
 
     .card {
-      max-width: 480px;
-      background: rgba(2, 6, 23, 0.9);
-      border: 1px solid #1f2937;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
       border-radius: 16px;
       padding: 20px;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+      border-color: var(--primary);
     }
 
-    .status { margin-bottom: 6px; }
-    .port { font-size: 0.85rem; color: #9ca3af; margin-bottom: 16px; }
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .icon-box {
+      width: 48px;
+      height: 48px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    
+    .card h3 { margin: 0; font-size: 1rem; }
+    .card p { margin: 4px 0 0; color: var(--text-muted); font-size: 0.85rem; }
 
-    button {
-      border-radius: 999px;
-      padding: 10px 18px;
+    .card-actions {
+      margin-top: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
       border: none;
-      font-weight: 600;
       cursor: pointer;
+      font-weight: 500;
+      font-family: inherit;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { opacity: 0.9; box-shadow: 0 0 10px var(--primary-glow); }
+    
+    .btn-danger { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.3); }
+
+    .btn-glass { background: rgba(255,255,255,0.1); color: white; }
+    .btn-glass:hover { background: rgba(255,255,255,0.15); }
+
+    .status-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--green);
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 99px;
+      font-weight: 600;
     }
 
-    .start { background: #22c55e; }
-    .stop { background: #ef4444; margin-left: 8px; }
+    /* --- TERMINAL/SSH WIDGET --- */
+    .terminal-info {
+        background: #000;
+        border-radius: 8px;
+        padding: 12px;
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: var(--green);
+        margin-top: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .copy-btn {
+        background: transparent;
+        color: #666;
+        border: none;
+        cursor: pointer;
+    }
+    .copy-btn:hover { color: white; }
+
   </style>
 </head>
-
 <body>
 
-  <div class="top">
-    <h1>Selfmade Labs</h1>
-    <div class="logout" onclick="logout()">Logout</div>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="brand">
+      <span class="material-icons-round">token</span> 
+      <div>Selfmade<span style="color:white">Ninja</span></div>
+    </div>
+    
+    <div class="nav-item active">
+      <span class="material-icons-round">dashboard</span> Dashboard
+    </div>
+    <div class="nav-item">
+      <span class="material-icons-round">folder_shared</span> My Labs
+    </div>
+    <div class="nav-item">
+      <span class="material-icons-round">dns</span> Services
+    </div>
+    <div class="nav-item">
+      <span class="material-icons-round">extension</span> Apps
+    </div>
+
+    <div class="storage-info">
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+        <span>Free Tier</span>
+        <span>45%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+      <div class="btn btn-glass" style="width:100%; justify-content:center; margin-top:12px;" onclick="logout()">
+        Logout
+      </div>
+    </div>
   </div>
 
-  <div class="card">
-    <div id="status" class="status">Loading…</div>
-    <div id="port" class="port"></div>
+  <div class="main">
+    <!-- HEADER -->
+    <div class="header">
+      <div class="search-bar">
+        <span class="material-icons-round">search</span>
+        <input type="text" placeholder="Search in labs, services or files...">
+      </div>
 
-    <button class="start" onclick="startLab()">Start Lab</button>
-    <button class="stop" onclick="stopLab()">Stop Lab</button>
+      <div class="user-profile">
+        <span class="material-icons-round" style="color:var(--text-muted)">notifications</span>
+        <span class="material-icons-round" style="color:var(--text-muted)">settings</span>
+        <div class="avatar">D</div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ACTIVE LABS SECTION -->
+      <div id="active-labs-section" style="display:none">
+        <div class="section-title">
+          <span class="material-icons-round" style="color:var(--green)">play_circle</span>
+          Running Instances
+        </div>
+        <div class="grid" id="active-labs-grid">
+           <!-- Active labs injected here -->
+        </div>
+      </div>
+
+      <!-- CATALOG SECTION -->
+      <div class="section-title">
+        <span class="material-icons-round">grid_view</span>
+        Lab Catalog
+      </div>
+      <div class="grid" id="catalog-grid">
+        <!-- Catalog injected here -->
+      </div>
+      
+    </div>
   </div>
 
 <script>
   const token = localStorage.getItem("token");
-
   if (!token) location.href = "/ui/login.html";
 
-  const statusEl = document.getElementById("status");
-  const portEl = document.getElementById("port");
+  // --- API HELPERS ---
+  const api = {
+    get: async (url) => {
+      const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` }});
+      if (res.status === 401) location.href = "/ui/login.html";
+      return res.json();
+    },
+    post: async (url, body) => {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      return res.json();
+    }
+  };
 
-  function authHeaders() {
-    return { "Authorization": "Bearer " + token };
+  // --- RENDERERS ---
+  
+  function renderCatalog(labs) {
+    const grid = document.getElementById("catalog-grid");
+    grid.innerHTML = labs.map(lab => `
+      <div class="card">
+        <div class="card-top">
+          <div class="icon-box" style="background: ${getIconColor(lab.id)}">
+            <span class="material-icons-round">${getIcon(lab.id)}</span>
+          </div>
+          <div>
+            <h3>${lab.name}</h3>
+            <p>${lab.description}</p>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="startLab('${lab.id}')">
+            <span class="material-icons-round">rocket_launch</span> Launch
+          </button>
+          <button class="btn btn-glass">Details</button>
+        </div>
+      </div>
+    `).join("");
   }
 
-  async function fetchStatus() {
-    const res = await fetch("/lab-status", { headers: authHeaders() });
-    if (!res.ok) throw new Error("API error");
-    return res.json();
+  function renderActive(instances) {
+    const section = document.getElementById("active-labs-section");
+    const grid = document.getElementById("active-labs-grid");
+    
+    if (instances.length === 0) {
+      section.style.display = "none";
+      return;
+    }
+    
+    section.style.display = "block";
+    grid.innerHTML = instances.map(inst => `
+      <div class="card" style="border-color: var(--green);">
+        <div class="status-badge">Running</div>
+        <div class="card-top">
+          <div class="icon-box" style="background: rgba(34, 197, 94, 0.1); color: var(--green)">
+             <span class="material-icons-round">terminal</span>
+          </div>
+          <div>
+            <h3>${inst.lab_name}</h3>
+            <p>ID: ${inst.container.substring(0,8)}</p>
+          </div>
+        </div>
+        
+        <div class="terminal-info">
+           <span>ssh student@127.0.0.1 -p ${inst.port}</span>
+           <button class="copy-btn"><span class="material-icons-round" style="font-size:16px">content_copy</span></button>
+        </div>
+
+        <div class="card-actions" style="margin-top:16px;">
+          <button class="btn btn-glass">
+            <span class="material-icons-round">open_in_new</span> Dashboard
+          </button>
+          <button class="btn btn-danger" onclick="stopLab('${inst.lab}')">
+            <span class="material-icons-round">stop</span> Stop
+          </button>
+        </div>
+      </div>
+    `).join("");
   }
 
-  async function refreshStatus() {
+  function getIcon(id) {
+    if(id.includes('ubuntu')) return 'terminal';
+    if(id.includes('kali')) return 'security';
+    if(id.includes('n8n')) return 'hub';
+    return 'dns';
+  }
+  
+  function getIconColor(id) {
+    if(id.includes('ubuntu')) return 'rgba(234, 88, 12, 0.2)'; // Orange
+    if(id.includes('kali')) return 'rgba(34, 211, 238, 0.2)'; // Cyan
+    if(id.includes('n8n')) return 'rgba(244, 63, 94, 0.2)'; // Rose
+    return 'rgba(255,255,255,0.05)';
+  }
+
+  // --- ACTIONS ---
+
+  async function loadData() {
     try {
-      const data = await fetchStatus();
-
-      // --- PURE UI LOGIC ONLY ---
-      if (data && data.running === true) {
-        statusEl.innerText = "Lab running ✅";
-        portEl.innerHTML = data.port
-          ? `SSH: <code>ssh student@127.0.0.1 -p ${data.port}</code>`
-          : "";
-      } else {
-        statusEl.innerText = "No lab running";
-        portEl.innerHTML = "";
-      }
-
-    } catch (e) {
-      console.error("Dashboard error:", e);
-      statusEl.innerText = "Unable to fetch lab status";
-      portEl.innerHTML = "";
+      const [catalog, status] = await Promise.all([
+        api.get("/labs"),
+        api.get("/lab-status")
+      ]);
+      renderCatalog(catalog);
+      renderActive(status);
+    } catch(e) {
+      console.error(e);
     }
   }
 
-  async function startLab() {
-    await fetch("/start-lab", { method: "POST", headers: authHeaders() });
-    setTimeout(refreshStatus, 500);
+  async function startLab(labId) {
+    // Show loading state if needed
+    const res = await api.post("/start-lab", { lab_id: labId });
+    if (res.error) alert(res.error);
+    await loadData();
   }
 
-  async function stopLab() {
-    await fetch("/stop-lab", { method: "POST", headers: authHeaders() });
-    setTimeout(refreshStatus, 500);
+  async function stopLab(labId) {
+    const res = await api.post("/stop-lab", { lab_id: labId });
+    await loadData();
   }
 
   function logout() {
@@ -124,9 +494,14 @@
     location.href = "/ui/login.html";
   }
 
-  refreshStatus();
-  setInterval(refreshStatus, 5000);
-</script>
+  // Init
+  loadData();
+  // Auto Refresh Status
+  setInterval(async () => {
+    const status = await api.get("/lab-status");
+    renderActive(status);
+  }, 5000);
 
+</script>
 </body>
 </html>

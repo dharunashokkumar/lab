@@ -3,7 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from app.lab_controller import start_ubuntu_lab, stop_lab, get_lab_status
+from app.lab_controller import (
+    start_lab, 
+    stop_lab, 
+    get_lab_status, 
+    list_catalog, 
+    list_services
+)
 from app.auth import (
     create_admin_user,
     create_user,
@@ -41,7 +47,14 @@ class UserCreate(BaseModel):
     role: str = "user"  # user | admin
 
 
-# ---------- ROOT ----------
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    role: str = "user"  # user | admin
+
+
+class LabRequest(BaseModel):
+    lab_id: str
 
 @app.get("/")
 def home():
@@ -79,14 +92,24 @@ def me(current_user: dict = Depends(get_current_user)):
 
 # ---------- LAB ROUTES (AUTH REQUIRED) ----------
 
+# ---------- LAB ROUTES (AUTH REQUIRED) ----------
+@app.get("/labs")
+def api_list_labs(current_user: dict = Depends(get_current_user)):
+    return list_catalog()
+
+@app.get("/services")
+def api_list_services(current_user: dict = Depends(get_current_user)):
+    return list_services()
+
 @app.post("/start-lab")
-def api_start_lab(current_user: dict = Depends(get_current_user)):
-    return start_ubuntu_lab(current_user["username"])
+def api_start_lab(payload: LabRequest, current_user: dict = Depends(get_current_user)):
+    return start_lab(current_user["username"], payload.lab_id)
 
 
 @app.post("/stop-lab")
-def api_stop_lab(current_user: dict = Depends(get_current_user)):
-    return stop_lab(current_user["username"])
+def api_stop_lab(payload: LabRequest = None, current_user: dict = Depends(get_current_user)):
+    lab_id = payload.lab_id if payload else None
+    return stop_lab(current_user["username"], lab_id)
 
 
 @app.get("/lab-status")
