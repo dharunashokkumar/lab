@@ -2,7 +2,7 @@ import subprocess
 import random
 import threading
 from datetime import datetime
-from app.db import instances, lab_catalog, services
+from app.db import lab_instances as instances, lab_catalog, service_instances as services
 
 LAB_TIME_LIMIT = 30 * 60  # 30 minutes
 
@@ -20,10 +20,10 @@ def auto_stop_timer(container_name, instance_id):
             {"$set": {"status": "auto-stopped", "stopped_at": datetime.utcnow()}}
         )
 
-def start_lab(username: str, lab_id: str):
+def start_lab(user_email: str, lab_id: str):
     # Check if user already has ANY lab running (for now limit 1)
     existing = instances.find_one({
-        "user_id": username,
+        "user_email": user_email,
         "status": "running"
     })
 
@@ -39,7 +39,7 @@ def start_lab(username: str, lab_id: str):
         return {"error": "Invalid Lab ID"}
 
     port = random.randint(2200, 2300) # Simple port pool
-    container = f"lab_{username}_{lab_id}_{random.randint(100,999)}"
+    container = f"lab_{user_email.split('@')[0]}_{lab_id}_{random.randint(100,999)}"
 
     # Determine Docker Command based on type
     # (Simplified for prototype: mostly assuming SSH or Web mapped to port)
@@ -69,7 +69,7 @@ def start_lab(username: str, lab_id: str):
     
     # Insert record
     res = instances.insert_one({
-        "user_id": username,
+        "user_email": user_email,
         "lab": lab_id,
         "lab_name": lab_config["name"],
         "container": container,
@@ -89,9 +89,9 @@ def start_lab(username: str, lab_id: str):
     }
 
 
-def stop_lab(username: str, lab_id: str = None):
+def stop_lab(user_email: str, lab_id: str = None):
     # Stop specific or all running labs for user
-    query = {"user_id": username, "status": "running"}
+    query = {"user_email": user_email, "status": "running"}
     if lab_id:
         query["lab"] = lab_id
         
@@ -118,10 +118,10 @@ def stop_lab(username: str, lab_id: str = None):
     return {"message": "Labs stopped", "stopped": stopped}
 
 
-def get_lab_status(username: str):
+def get_lab_status(user_email: str):
     # Get all running labs
     cursor = instances.find(
-        {"user_id": username, "status": "running"},
+        {"user_email": user_email, "status": "running"},
         {"_id": 0}
     )
     return list(cursor)

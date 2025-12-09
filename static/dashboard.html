@@ -1,507 +1,535 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Selfmade Ninja Academy</title>
-  
-  <!-- Fonts & Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Selfmade Labs</title>
 
-  <style>
-    /* --- CSS VARIABLES & THEME --- */
-    :root {
-      --bg-body: #05050A;
-      --bg-sidebar: #090910;
-      --bg-surface: #13131F;
-      --bg-surface-hover: #1C1C2E;
-      --primary: #6366f1;
-      --primary-glow: rgba(99, 102, 241, 0.4);
-      --accent: #22d3ee;
-      --text-main: #FFFFFF;
-      --text-muted: #94a3b8;
-      --border: #2D2D3F;
-      --green: #22c55e;
-      --red: #ef4444;
-      
-      --sidebar-width: 260px;
-      --header-height: 70px;
-    }
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="/ui/css/theme.css">
 
-    * { box-sizing: border-box; }
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
 
-    body {
-      margin: 0;
-      font-family: 'Outfit', sans-serif;
-      background: var(--bg-body);
-      color: var(--text-main);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* --- SIDEBAR --- */
-    .sidebar {
-      width: var(--sidebar-width);
-      background: var(--bg-sidebar);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      padding: 24px;
-      flex-shrink: 0;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 40px;
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--text-main);
-    }
-    .brand span { color: var(--primary); }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      border-radius: 12px;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.2s;
-      font-weight: 500;
-      margin-bottom: 4px;
-    }
-    .nav-item:hover, .nav-item.active {
-      background: var(--bg-surface);
-      color: var(--text-main);
-    }
-    .nav-item.active { border-left: 3px solid var(--primary); }
-
-    .storage-info {
-      margin-top: auto;
-      background: var(--bg-surface);
-      padding: 16px;
-      border-radius: 12px;
-    }
-    .progress-bar {
-      height: 6px;
-      background: #333;
-      border-radius: 3px;
-      margin: 8px 0;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      width: 45%;
-      background: linear-gradient(90deg, var(--primary), var(--accent));
-    }
-
-    /* --- MAIN CONTENT --- */
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* --- HEADER --- */
-    .header {
-      height: var(--header-height);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .search-bar {
-      flex: 0 1 600px;
-      background: var(--bg-surface);
-      border-radius: 12px;
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: var(--text-muted);
-      border: 1px solid transparent;
-      transition: 0.2s;
-    }
-    .search-bar:focus-within {
-      border-color: var(--primary);
-      box-shadow: 0 0 15px var(--primary-glow);
-      color: var(--text-main);
-    }
-    .search-bar input {
-      background: transparent;
-      border: none;
-      outline: none;
-      color: inherit;
-      font-size: 1rem;
-      width: 100%;
-      font-family: inherit;
-    }
-
-    .user-profile {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .avatar {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-    }
-
-    /* --- CONTENT AREA --- */
-    .content {
-      flex: 1;
-      padding: 32px;
-      overflow-y: auto;
-    }
-
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* --- CARDS GRID --- */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 24px;
-      margin-bottom: 40px;
-    }
-
-    .card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      transition: all 0.2s;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-      border-color: var(--primary);
-    }
-
-    .card-top {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .icon-box {
-      width: 48px;
-      height: 48px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-    }
-    
-    .card h3 { margin: 0; font-size: 1rem; }
-    .card p { margin: 4px 0 0; color: var(--text-muted); font-size: 0.85rem; }
-
-    .card-actions {
-      margin-top: auto;
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-weight: 500;
-      font-family: inherit;
-      transition: 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-    }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { opacity: 0.9; box-shadow: 0 0 10px var(--primary-glow); }
-    
-    .btn-danger { background: rgba(239, 68, 68, 0.2); color: var(--red); }
-    .btn-danger:hover { background: rgba(239, 68, 68, 0.3); }
-
-    .btn-glass { background: rgba(255,255,255,0.1); color: white; }
-    .btn-glass:hover { background: rgba(255,255,255,0.15); }
-
-    .status-badge {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: rgba(34, 197, 94, 0.2);
-      color: var(--green);
-      font-size: 0.75rem;
-      padding: 4px 8px;
-      border-radius: 99px;
-      font-weight: 600;
-    }
-
-    /* --- TERMINAL/SSH WIDGET --- */
-    .terminal-info {
-        background: #000;
-        border-radius: 8px;
-        padding: 12px;
-        font-family: monospace;
-        font-size: 0.8rem;
-        color: var(--green);
-        margin-top: 12px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .copy-btn {
-        background: transparent;
-        color: #666;
-        border: none;
-        cursor: pointer;
-    }
-    .copy-btn:hover { color: white; }
-
-  </style>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span class="material-icons-round">terminal</span>
+                Selfmade Labs
+            </div>
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="brand">
-      <span class="material-icons-round">token</span> 
-      <div>Selfmade<span style="color:white">Ninja</span></div>
+            <nav class="sidebar-nav">
+                <a href="/ui/dashboard.html" class="nav-item active">
+                    <span class="material-icons-round">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/ui/services.html" class="nav-item">
+                    <span class="material-icons-round">dns</span>
+                    <span>Services</span>
+                </a>
+                <a href="/ui/profile.html" class="nav-item">
+                    <span class="material-icons-round">person</span>
+                    <span>Profile</span>
+                </a>
+                <a href="/ui/settings.html" class="nav-item">
+                    <span class="material-icons-round">settings</span>
+                    <span>Settings</span>
+                </a>
+                <div id="adminNav" style="display: none;">
+                    <a href="/ui/admin.html" class="nav-item" style="color: var(--error);">
+                        <span class="material-icons-round">admin_panel_settings</span>
+                        <span>Admin Panel</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-ghost" onclick="api.logout()" style="width: 100%; justify-content: flex-start;">
+                    <span class="material-icons-round">logout</span>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div style="display: flex; align-items: center; gap: var(--spacing-md);">
+                    <h1 style="margin: 0; font-size: 20px; font-weight: 500;">Dashboard</h1>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                    <!-- Theme Toggle -->
+                    <button id="themeToggle" class="btn btn-icon btn-ghost" onclick="toggleTheme()" title="Toggle theme">
+                        <span class="material-icons-round">brightness_auto</span>
+                    </button>
+
+                    <!-- Notifications -->
+                    <div style="position: relative;">
+                        <button id="notificationBtn" class="btn btn-icon btn-ghost" onclick="toggleNotifications()" title="Notifications">
+                            <span class="material-icons-round">notifications</span>
+                            <span id="notificationBadge" class="badge badge-error" style="position: absolute; top: 8px; right: 8px; display: none; min-width: 16px; height: 16px; padding: 2px 4px; font-size: 10px;"></span>
+                        </button>
+
+                        <!-- Notifications Dropdown -->
+                        <div id="notificationsDropdown" class="dropdown" style="display: none;">
+                            <div style="padding: var(--spacing-md); border-bottom: 1px solid var(--border-secondary); display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Notifications</h3>
+                                <button class="btn btn-ghost" style="padding: 4px 8px; font-size: 12px;" onclick="markAllRead()">Mark all read</button>
+                            </div>
+                            <div id="notificationsList" style="max-height: 400px; overflow-y: auto;">
+                                <!-- Notifications will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Menu -->
+                    <div style="display: flex; align-items: center; gap: var(--spacing-sm); padding-left: var(--spacing-sm); border-left: 1px solid var(--border-primary);">
+                        <img id="userAvatar" src="" alt="User" style="width: 32px; height: 32px; border-radius: 50%; display: none;">
+                        <div id="userAvatarFallback" style="width: 32px; height: 32px; border-radius: 50%; background: var(--accent-primary); display: flex; align-items: center; justify-content: center; color: var(--text-inverse); font-weight: 500; font-size: 14px;"></div>
+                        <div>
+                            <div id="userName" style="font-size: 14px; font-weight: 500; color: var(--text-primary);"></div>
+                            <div id="userEmail" style="font-size: 12px; color: var(--text-secondary);"></div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- User Stats -->
+                <div class="card-grid" id="statsGrid" style="margin-bottom: var(--spacing-xl);">
+                    <!-- Stats cards will be loaded here -->
+                </div>
+
+                <!-- Running Labs -->
+                <div id="runningLabsSection" style="margin-bottom: var(--spacing-xl); display: none;">
+                    <h2 style="font-size: 18px; font-weight: 500; margin-bottom: var(--spacing-md); display: flex; align-items: center; gap: var(--spacing-sm);">
+                        <span class="material-icons-round" style="color: var(--success);">play_circle</span>
+                        Running Labs
+                    </h2>
+                    <div class="card-grid" id="runningLabsGrid">
+                        <!-- Running labs will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Lab Catalog -->
+                <div style="margin-bottom: var(--spacing-xl);">
+                    <h2 style="font-size: 18px; font-weight: 500; margin-bottom: var(--spacing-md); display: flex; align-items: center; gap: var(--spacing-sm);">
+                        <span class="material-icons-round">science</span>
+                        Lab Catalog
+                    </h2>
+                    <div class="card-grid" id="catalogGrid">
+                        <!-- Lab catalog will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Running Services Preview -->
+                <div id="runningServicesSection" style="margin-bottom: var(--spacing-xl); display: none;">
+                    <h2 style="font-size: 18px; font-weight: 500; margin-bottom: var(--spacing-md); display: flex; align-items: center; gap: var(--spacing-sm);">
+                        <span class="material-icons-round" style="color: var(--success);">dns</span>
+                        Running Services
+                        <a href="/ui/services.html" style="margin-left: auto; font-size: 14px; color: var(--accent-primary); text-decoration: none;">View all →</a>
+                    </h2>
+                    <div class="card-grid" id="runningServicesGrid">
+                        <!-- Running services will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
-    
-    <div class="nav-item active">
-      <span class="material-icons-round">dashboard</span> Dashboard
-    </div>
-    <div class="nav-item">
-      <span class="material-icons-round">folder_shared</span> My Labs
-    </div>
-    <div class="nav-item">
-      <span class="material-icons-round">dns</span> Services
-    </div>
-    <div class="nav-item">
-      <span class="material-icons-round">extension</span> Apps
-    </div>
 
-    <div class="storage-info">
-      <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-        <span>Free Tier</span>
-        <span>45%</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill"></div></div>
-      <div class="btn btn-glass" style="width:100%; justify-content:center; margin-top:12px;" onclick="logout()">
-        Logout
-      </div>
-    </div>
-  </div>
+    <!-- Theme & API Scripts -->
+    <script src="/ui/js/theme.js"></script>
+    <script src="/ui/js/api.js"></script>
 
-  <div class="main">
-    <!-- HEADER -->
-    <div class="header">
-      <div class="search-bar">
-        <span class="material-icons-round">search</span>
-        <input type="text" placeholder="Search in labs, services or files...">
-      </div>
+    <script>
+        // Extract token from URL (OAuth callback)
+        extractTokenFromURL();
 
-      <div class="user-profile">
-        <span class="material-icons-round" style="color:var(--text-muted)">notifications</span>
-        <span class="material-icons-round" style="color:var(--text-muted)">settings</span>
-        <div class="avatar">D</div>
-      </div>
-    </div>
+        // Auth Check
+        if (!requireAuth()) {
+            throw new Error('Not authenticated');
+        }
 
-    <!-- CONTENT -->
-    <div class="content">
+        // Global State
+        let currentUser = null;
+        let notificationsOpen = false;
 
-      <!-- ACTIVE LABS SECTION -->
-      <div id="active-labs-section" style="display:none">
-        <div class="section-title">
-          <span class="material-icons-round" style="color:var(--green)">play_circle</span>
-          Running Instances
-        </div>
-        <div class="grid" id="active-labs-grid">
-           <!-- Active labs injected here -->
-        </div>
-      </div>
+        // Initialize Dashboard
+        async function initDashboard() {
+            try {
+                // Load user profile
+                currentUser = await api.getProfile();
+                renderUserInfo(currentUser);
 
-      <!-- CATALOG SECTION -->
-      <div class="section-title">
-        <span class="material-icons-round">grid_view</span>
-        Lab Catalog
-      </div>
-      <div class="grid" id="catalog-grid">
-        <!-- Catalog injected here -->
-      </div>
-      
-    </div>
-  </div>
+                // Show admin nav if admin
+                if (currentUser.role === 'admin') {
+                    document.getElementById('adminNav').style.display = 'block';
+                }
 
-<script>
-  const token = localStorage.getItem("token");
-  if (!token) location.href = "/ui/login.html";
+                // Load all data in parallel
+                await Promise.all([
+                    loadStats(),
+                    loadLabStatus(),
+                    loadLabCatalog(),
+                    loadServiceStatus(),
+                    loadNotifications()
+                ]);
 
-  // --- API HELPERS ---
-  const api = {
-    get: async (url) => {
-      const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` }});
-      if (res.status === 401) location.href = "/ui/login.html";
-      return res.json();
-    },
-    post: async (url, body) => {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      return res.json();
-    }
-  };
+                // Setup auto-refresh
+                setupAutoRefresh();
+            } catch (error) {
+                console.error('Failed to initialize dashboard:', error);
+            }
+        }
 
-  // --- RENDERERS ---
-  
-  function renderCatalog(labs) {
-    const grid = document.getElementById("catalog-grid");
-    grid.innerHTML = labs.map(lab => `
-      <div class="card">
-        <div class="card-top">
-          <div class="icon-box" style="background: ${getIconColor(lab.id)}">
-            <span class="material-icons-round">${getIcon(lab.id)}</span>
-          </div>
-          <div>
-            <h3>${lab.name}</h3>
-            <p>${lab.description}</p>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button class="btn btn-primary" onclick="startLab('${lab.id}')">
-            <span class="material-icons-round">rocket_launch</span> Launch
-          </button>
-          <button class="btn btn-glass">Details</button>
-        </div>
-      </div>
-    `).join("");
-  }
+        // Render User Info
+        function renderUserInfo(user) {
+            console.log('User data:', user); // Debug log
+            document.getElementById('userName').textContent = user.full_name || 'User';
+            document.getElementById('userEmail').textContent = user.email;
 
-  function renderActive(instances) {
-    const section = document.getElementById("active-labs-section");
-    const grid = document.getElementById("active-labs-grid");
-    
-    if (instances.length === 0) {
-      section.style.display = "none";
-      return;
-    }
-    
-    section.style.display = "block";
-    grid.innerHTML = instances.map(inst => `
-      <div class="card" style="border-color: var(--green);">
-        <div class="status-badge">Running</div>
-        <div class="card-top">
-          <div class="icon-box" style="background: rgba(34, 197, 94, 0.1); color: var(--green)">
-             <span class="material-icons-round">terminal</span>
-          </div>
-          <div>
-            <h3>${inst.lab_name}</h3>
-            <p>ID: ${inst.container.substring(0,8)}</p>
-          </div>
-        </div>
-        
-        <div class="terminal-info">
-           <span>ssh student@127.0.0.1 -p ${inst.port}</span>
-           <button class="copy-btn"><span class="material-icons-round" style="font-size:16px">content_copy</span></button>
-        </div>
+            // Check if avatar_url exists and is not empty
+            if (user.avatar_url && user.avatar_url.trim() !== '') {
+                console.log('Loading avatar:', user.avatar_url); // Debug log
+                const avatarImg = document.getElementById('userAvatar');
+                avatarImg.src = user.avatar_url;
+                avatarImg.style.display = 'block';
+                document.getElementById('userAvatarFallback').style.display = 'none';
 
-        <div class="card-actions" style="margin-top:16px;">
-          <button class="btn btn-glass">
-            <span class="material-icons-round">open_in_new</span> Dashboard
-          </button>
-          <button class="btn btn-danger" onclick="stopLab('${inst.lab}')">
-            <span class="material-icons-round">stop</span> Stop
-          </button>
-        </div>
-      </div>
-    `).join("");
-  }
+                // Handle image load error
+                avatarImg.onerror = function() {
+                    console.error('Failed to load avatar image');
+                    this.style.display = 'none';
+                    document.getElementById('userAvatarFallback').style.display = 'flex';
+                };
+            } else {
+                console.log('No avatar URL, showing initials'); // Debug log
+                const initials = (user.full_name || user.email)
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .substring(0, 2);
+                document.getElementById('userAvatarFallback').textContent = initials;
+            }
+        }
 
-  function getIcon(id) {
-    if(id.includes('ubuntu')) return 'terminal';
-    if(id.includes('kali')) return 'security';
-    if(id.includes('n8n')) return 'hub';
-    return 'dns';
-  }
-  
-  function getIconColor(id) {
-    if(id.includes('ubuntu')) return 'rgba(234, 88, 12, 0.2)'; // Orange
-    if(id.includes('kali')) return 'rgba(34, 211, 238, 0.2)'; // Cyan
-    if(id.includes('n8n')) return 'rgba(244, 63, 94, 0.2)'; // Rose
-    return 'rgba(255,255,255,0.05)';
-  }
+        // Load Stats
+        async function loadStats() {
+            try {
+                const stats = await api.getUserStats();
+                const statsGrid = document.getElementById('statsGrid');
 
-  // --- ACTIONS ---
+                statsGrid.innerHTML = `
+                    <div class="card">
+                        <div style="display: flex; align-items: center; gap: var(--spacing-md);">
+                            <span class="material-icons-round" style="font-size: 40px; color: var(--accent-primary);">science</span>
+                            <div>
+                                <div style="font-size: 28px; font-weight: 600; color: var(--text-primary);">${stats.labs_launched || 0}</div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">Labs Launched</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div style="display: flex; align-items: center; gap: var(--spacing-md);">
+                            <span class="material-icons-round" style="font-size: 40px; color: var(--success);">dns</span>
+                            <div>
+                                <div style="font-size: 28px; font-weight: 600; color: var(--text-primary);">${stats.services_launched || 0}</div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">Services Started</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div style="display: flex; align-items: center; gap: var(--spacing-md);">
+                            <span class="material-icons-round" style="font-size: 40px; color: var(--warning);">access_time</span>
+                            <div>
+                                <div style="font-size: 28px; font-weight: 600; color: var(--text-primary);">${Math.round(stats.total_runtime_minutes || 0)}</div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">Total Minutes</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
 
-  async function loadData() {
-    try {
-      const [catalog, status] = await Promise.all([
-        api.get("/labs"),
-        api.get("/lab-status")
-      ]);
-      renderCatalog(catalog);
-      renderActive(status);
-    } catch(e) {
-      console.error(e);
-    }
-  }
+        // Load Lab Status
+        async function loadLabStatus() {
+            try {
+                const labStatus = await api.getLabStatus();
+                const section = document.getElementById('runningLabsSection');
+                const grid = document.getElementById('runningLabsGrid');
 
-  async function startLab(labId) {
-    // Show loading state if needed
-    const res = await api.post("/start-lab", { lab_id: labId });
-    if (res.error) alert(res.error);
-    await loadData();
-  }
+                if (!labStatus || labStatus.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
 
-  async function stopLab(labId) {
-    const res = await api.post("/stop-lab", { lab_id: labId });
-    await loadData();
-  }
+                section.style.display = 'block';
+                grid.innerHTML = labStatus.map(lab => `
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--spacing-md);">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-md);">
+                                <span class="material-icons-round" style="font-size: 40px; color: var(--success);">terminal</span>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: 500;">${lab.lab_name}</h3>
+                                    <p style="margin: 4px 0 0; font-size: 12px; color: var(--text-secondary);">Port: ${lab.port}</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-success">Running</span>
+                        </div>
 
-  function logout() {
-    localStorage.removeItem("token");
-    location.href = "/ui/login.html";
-  }
+                        <div style="background: var(--bg-tertiary); padding: var(--spacing-sm); border-radius: var(--radius-sm); font-family: monospace; font-size: 12px; margin-bottom: var(--spacing-md); display: flex; justify-content: space-between; align-items: center;">
+                            <code>ssh student@127.0.0.1 -p ${lab.port}</code>
+                            <button class="btn btn-ghost btn-icon" style="width: 24px; height: 24px;" onclick="copyToClipboard('ssh student@127.0.0.1 -p ${lab.port}')" title="Copy">
+                                <span class="material-icons-round" style="font-size: 16px;">content_copy</span>
+                            </button>
+                        </div>
 
-  // Init
-  loadData();
-  // Auto Refresh Status
-  setInterval(async () => {
-    const status = await api.get("/lab-status");
-    renderActive(status);
-  }, 5000);
+                        <div style="display: flex; gap: var(--spacing-sm);">
+                            <button class="btn btn-secondary" style="flex: 1;" onclick="stopLab('${lab.lab}')">
+                                <span class="material-icons-round" style="font-size: 18px;">stop</span>
+                                Stop
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load lab status:', error);
+            }
+        }
 
-</script>
+        // Load Lab Catalog
+        async function loadLabCatalog() {
+            try {
+                const catalog = await api.getLabs();
+                const grid = document.getElementById('catalogGrid');
+
+                grid.innerHTML = catalog.map(lab => {
+                    const icons = {
+                        'ubuntu-ssh': 'terminal',
+                        'kali-linux': 'security',
+                        'n8n': 'hub'
+                    };
+
+                    return `
+                        <div class="card">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                                <span class="material-icons-round" style="font-size: 40px; color: var(--accent-primary);">${icons[lab.id] || 'dns'}</span>
+                                <div style="flex: 1;">
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: 500;">${lab.name}</h3>
+                                    <p style="margin: 4px 0 0; font-size: 14px; color: var(--text-secondary);">${lab.description}</p>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: var(--spacing-sm);">
+                                <button class="btn btn-primary" style="flex: 1;" onclick="startLab('${lab.id}')">
+                                    <span class="material-icons-round" style="font-size: 18px;">rocket_launch</span>
+                                    Launch
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to load lab catalog:', error);
+            }
+        }
+
+        // Load Service Status
+        async function loadServiceStatus() {
+            try {
+                const serviceStatus = await api.getServiceStatus();
+                const section = document.getElementById('runningServicesSection');
+                const grid = document.getElementById('runningServicesGrid');
+
+                if (!serviceStatus || serviceStatus.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                section.style.display = 'block';
+                grid.innerHTML = serviceStatus.slice(0, 3).map(service => `
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--spacing-md);">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-md);">
+                                <span class="material-icons-round" style="font-size: 40px; color: var(--success);">dns</span>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: 500;">${service.service_name}</h3>
+                                    <p style="margin: 4px 0 0; font-size: 12px; color: var(--text-secondary);">Port: ${service.port}</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-success">Running</span>
+                        </div>
+                        <a href="/ui/services.html" class="btn btn-secondary" style="width: 100%; text-decoration: none;">
+                            View Credentials
+                        </a>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load service status:', error);
+            }
+        }
+
+        // Load Notifications
+        async function loadNotifications() {
+            try {
+                const unreadCount = await api.getUnreadCount();
+                const badge = document.getElementById('notificationBadge');
+
+                if (unreadCount.count > 0) {
+                    badge.textContent = unreadCount.count > 9 ? '9+' : unreadCount.count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Failed to load notification count:', error);
+            }
+        }
+
+        // Toggle Notifications Dropdown
+        async function toggleNotifications() {
+            const dropdown = document.getElementById('notificationsDropdown');
+            notificationsOpen = !notificationsOpen;
+
+            if (notificationsOpen) {
+                dropdown.style.display = 'block';
+                await loadNotificationsList();
+            } else {
+                dropdown.style.display = 'none';
+            }
+        }
+
+        // Load Notifications List
+        async function loadNotificationsList() {
+            try {
+                const notifications = await api.getNotifications(false);
+                const list = document.getElementById('notificationsList');
+
+                if (notifications.length === 0) {
+                    list.innerHTML = '<div style="padding: var(--spacing-lg); text-align: center; color: var(--text-secondary);">No notifications</div>';
+                    return;
+                }
+
+                list.innerHTML = notifications.map(notif => `
+                    <div class="dropdown-item" style="background: ${notif.read ? 'transparent' : 'var(--accent-light)'};">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--spacing-xs);">
+                            <strong style="font-size: 14px;">${notif.title}</strong>
+                            ${!notif.read ? '<span class="badge badge-error" style="font-size: 10px;">New</span>' : ''}
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: var(--spacing-xs);">${notif.message}</div>
+                        <div style="font-size: 11px; color: var(--text-tertiary);">${new Date(notif.created_at).toLocaleString()}</div>
+                        ${!notif.read ? `<button class="btn btn-ghost" style="margin-top: var(--spacing-xs); padding: 4px 8px; font-size: 12px;" onclick="markNotificationRead('${notif._id}')">Mark as read</button>` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load notifications:', error);
+            }
+        }
+
+        // Mark Notification as Read
+        async function markNotificationRead(notificationId) {
+            try {
+                await api.markNotificationRead(notificationId);
+                await loadNotifications();
+                await loadNotificationsList();
+            } catch (error) {
+                console.error('Failed to mark notification as read:', error);
+            }
+        }
+
+        // Mark All Notifications as Read
+        async function markAllRead() {
+            try {
+                await api.markAllNotificationsRead();
+                await loadNotifications();
+                await loadNotificationsList();
+            } catch (error) {
+                console.error('Failed to mark all as read:', error);
+            }
+        }
+
+        // Lab Actions
+        async function startLab(labId) {
+            try {
+                const btn = event.target.closest('button');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-icons-round" style="font-size: 18px;">hourglass_empty</span> Starting...';
+
+                await api.startLab(labId);
+                await loadLabStatus();
+                await loadStats();
+            } catch (error) {
+                alert('Failed to start lab: ' + (error.message || 'Unknown error'));
+            }
+        }
+
+        async function stopLab(labId) {
+            try {
+                console.log('Stopping lab:', labId); // Debug log
+                const btn = event.target.closest('button');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-icons-round" style="font-size: 18px;">hourglass_empty</span> Stopping...';
+
+                const result = await api.stopLab(labId);
+                console.log('Stop lab result:', result); // Debug log
+
+                await loadLabStatus();
+                await loadStats();
+            } catch (error) {
+                console.error('Stop lab error:', error); // Debug log
+                alert('Failed to stop lab: ' + (error.message || 'Unknown error'));
+                // Re-enable button on error
+                const btn = event.target.closest('button');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-icons-round" style="font-size: 18px;">stop</span> Stop';
+                }
+            }
+        }
+
+        // Utilities
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Could show a toast notification here
+                console.log('Copied to clipboard');
+            });
+        }
+
+        // Setup Auto-Refresh
+        function setupAutoRefresh() {
+            // Refresh lab and service status every 5 seconds
+            setInterval(async () => {
+                await Promise.all([
+                    loadLabStatus(),
+                    loadServiceStatus(),
+                    loadNotifications()
+                ]);
+            }, 5000);
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            const notifBtn = document.getElementById('notificationBtn');
+            const notifDropdown = document.getElementById('notificationsDropdown');
+
+            if (notificationsOpen && !notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+                toggleNotifications();
+            }
+        });
+
+        // Initialize on page load
+        initDashboard();
+    </script>
 </body>
 </html>

@@ -1,220 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Selfmade Labs – Admin Panel</title>
-  <style>
-    body {
-      background: #020617;
-      color: #e5e7eb;
-      font-family: system-ui, sans-serif;
-      margin: 0;
-      padding: 24px;
-    }
-    .top {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    a {
-      color: #60a5fa;
-      text-decoration: none;
-      font-size: 0.9rem;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1.2fr 1.8fr;
-      gap: 20px;
-    }
-    .card {
-      background: #020617;
-      border-radius: 12px;
-      border: 1px solid #1f2937;
-      padding: 16px;
-    }
-    input, select {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      border: 1px solid #374151;
-      background: #020617;
-      color: #e5e7eb;
-    }
-    button {
-      padding: 8px 16px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      background: #22c55e;
-      color: #022c22;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-    th, td {
-      border-bottom: 1px solid #1f2937;
-      padding: 6px;
-      text-align: left;
-    }
-    th {
-      color: #9ca3af;
-      font-weight: 500;
-    }
-    .error {
-      color: #ef4444;
-      font-size: 0.8rem;
-      margin-top: 6px;
-    }
-    .ok {
-      color: #4ade80;
-      font-size: 0.8rem;
-      margin-top: 6px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Selfmade Labs</title>
+    <link rel="stylesheet" href="/ui/css/theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="top">
-    <div>
-      <h2>Admin Panel</h2>
-      <div id="adminInfo" style="font-size:0.85rem;color:#9ca3af;"></div>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-brand"><span class="material-icons-round">terminal</span> Selfmade Labs</div>
+            <nav class="sidebar-nav">
+                <a href="/ui/dashboard.html" class="nav-item"><span class="material-icons-round">dashboard</span> Dashboard</a>
+                <a href="/ui/services.html" class="nav-item"><span class="material-icons-round">dns</span> Services</a>
+                <a href="/ui/profile.html" class="nav-item"><span class="material-icons-round">person</span> Profile</a>
+                <a href="/ui/settings.html" class="nav-item"><span class="material-icons-round">settings</span> Settings</a>
+                <a href="/ui/admin.html" class="nav-item active" style="color:var(--error);"><span class="material-icons-round">admin_panel_settings</span> Admin Panel</a>
+            </nav>
+            <div class="sidebar-footer"><button class="btn btn-ghost" onclick="api.logout()" style="width:100%; justify-content:flex-start;"><span class="material-icons-round">logout</span> Logout</button></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1 style="margin:0; font-size:20px; font-weight:500; color:var(--error);">Admin Panel</h1>
+                <button id="themeToggle" class="btn btn-icon btn-ghost" onclick="toggleTheme()"><span class="material-icons-round">brightness_auto</span></button>
+            </header>
+
+            <div class="content">
+                <div class="card-grid" style="margin-bottom:var(--spacing-xl);" id="statsGrid"></div>
+
+                <div class="card" style="margin-bottom:var(--spacing-xl);">
+                    <h2 style="margin:0 0 var(--spacing-lg); font-size:18px; display:flex; justify-content:space-between; align-items:center;"><span>Users</span><button class="btn btn-primary" onclick="showAddUser()"><span class="material-icons-round">add</span> Add User</button></h2>
+                    <div id="usersTable"></div>
+                </div>
+
+                <div class="card">
+                    <h2 style="margin:0 0 var(--spacing-lg); font-size:18px;">Audit Logs</h2>
+                    <div id="auditLogs" style="max-height:400px; overflow-y:auto;"></div>
+                </div>
+
+                <div id="addUserModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this) closeModal()">
+                    <div class="modal" onclick="event.stopPropagation()">
+                        <h2 style="margin:0 0 var(--spacing-lg);">Add User</h2>
+                        <label style="display:block; margin-bottom:var(--spacing-sm);">Email</label>
+                        <input id="newEmail" type="email" style="margin-bottom:var(--spacing-md);">
+                        <label style="display:block; margin-bottom:var(--spacing-sm);">Full Name</label>
+                        <input id="newName" type="text" style="margin-bottom:var(--spacing-md);">
+                        <label style="display:block; margin-bottom:var(--spacing-sm);">Role</label>
+                        <select id="newRole" style="margin-bottom:var(--spacing-lg);">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <div style="display:flex; gap:var(--spacing-sm);">
+                            <button class="btn btn-primary" onclick="createUser()"><span class="material-icons-round">add</span> Create</button>
+                            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
-    <div>
-      <a href="/ui/dashboard.html">← Back to Dashboard</a>
-    </div>
-  </div>
 
-  <div class="grid">
-    <div class="card">
-      <h3>Create User</h3>
-      <input id="username" placeholder="Username" />
-      <input id="password" type="password" placeholder="Password" />
-      <select id="role">
-        <option value="user">User</option>
-        <option value="admin">Admin</option>
-      </select>
-      <button onclick="createUser()">Create</button>
-      <div id="msg" class="error" style="display:none;"></div>
-      <div id="ok" class="ok" style="display:none;"></div>
-    </div>
+    <script src="/ui/js/theme.js"></script>
+    <script src="/ui/js/api.js"></script>
+    <script>
+        extractTokenFromURL();
+        if(!requireAuth()) throw new Error('Not authenticated');
 
-    <div class="card">
-      <h3>Existing Users</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Role</th>
-            <th>Created At</th>
-          </tr>
-        </thead>
-        <tbody id="userRows">
-        </tbody>
-      </table>
-    </div>
-  </div>
+        async function init() {
+            const user = await api.getProfile();
+            if(user.role !== 'admin') { alert('Access denied'); location.href='/ui/dashboard.html'; return; }
 
-  <script>
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      window.location.href = "/ui/login.html";
-    }
-
-    function authHeaders() {
-      return {
-        "Authorization": "Bearer " + token,
-        "Content-Type": "application/json"
-      };
-    }
-
-    async function loadAdminInfo() {
-      try {
-        const res = await fetch("/me", { headers: authHeaders() });
-        if (!res.ok) {
-          window.location.href = "/ui/login.html";
-          return;
-        }
-        const data = await res.json();
-        document.getElementById("adminInfo").innerText =
-          `Logged in as ${data.username} (${data.role})`;
-      } catch {
-        window.location.href = "/ui/login.html";
-      }
-    }
-
-    async function loadUsers() {
-      const tbody = document.getElementById("userRows");
-      tbody.innerHTML = "";
-      try {
-        const res = await fetch("/admin/users", { headers: authHeaders() });
-        if (res.status === 403 || res.status === 401) {
-          alert("Admin access required");
-          window.location.href = "/ui/dashboard.html";
-          return;
-        }
-        const data = await res.json();
-        data.forEach(u => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${u.username}</td>
-            <td>${u.role}</td>
-            <td>${u.created_at || ""}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function createUser() {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const role = document.getElementById("role").value;
-      const msg = document.getElementById("msg");
-      const ok = document.getElementById("ok");
-
-      msg.style.display = "none";
-      ok.style.display = "none";
-
-      if (!username || !password) {
-        msg.innerText = "Username and password required.";
-        msg.style.display = "block";
-        return;
-      }
-
-      try {
-        const res = await fetch("/admin/create-user", {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify({ username, password, role })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          msg.innerText = data.detail || "Error creating user";
-          msg.style.display = "block";
-          return;
+            await Promise.all([loadStats(), loadUsers(), loadAuditLogs()]);
+            setInterval(loadAuditLogs, 10000);
         }
 
-        ok.innerText = `User ${data.username} created as ${data.role}`;
-        ok.style.display = "block";
-        document.getElementById("username").value = "";
-        document.getElementById("password").value = "";
-        loadUsers();
-      } catch (e) {
-        msg.innerText = "Network error";
-        msg.style.display = "block";
-      }
-    }
+        async function loadStats() {
+            const stats = await api.adminGetStats();
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="card"><span class="material-icons-round" style="font-size:40px; color:var(--accent-primary);">people</span><div style="font-size:24px; font-weight:600;">${stats.total_users||0}</div><div style="color:var(--text-secondary);">Total Users</div></div>
+                <div class="card"><span class="material-icons-round" style="font-size:40px; color:var(--success);">play_circle</span><div style="font-size:24px; font-weight:600;">${stats.active_labs||0}</div><div style="color:var(--text-secondary);">Active Labs</div></div>
+                <div class="card"><span class="material-icons-round" style="font-size:40px; color:var(--warning);">dns</span><div style="font-size:24px; font-weight:600;">${stats.active_services||0}</div><div style="color:var(--text-secondary);">Active Services</div></div>
+            `;
+        }
 
-    loadAdminInfo();
-    loadUsers();
-  </script>
+        async function loadUsers() {
+            const users = await api.adminGetUsers();
+            document.getElementById('usersTable').innerHTML = users.map(u => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:var(--spacing-md); border-bottom:1px solid var(--border-primary);">
+                    <div><strong>${u.full_name||'No Name'}</strong><br><span style="font-size:12px; color:var(--text-secondary);">${u.email}</span></div>
+                    <div style="display:flex; gap:var(--spacing-sm); align-items:center;">
+                        <span class="badge ${u.role==='admin'?'badge-error':'badge-success'}">${u.role.toUpperCase()}</span>
+                        <button class="btn btn-ghost" onclick="toggleRole('${u.email}', '${u.role}')"><span class="material-icons-round">swap_horiz</span></button>
+                        <button class="btn btn-ghost" onclick="deleteUser('${u.email}')"><span class="material-icons-round">delete</span></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadAuditLogs() {
+            const logs = await api.adminGetAuditLogs(50);
+            document.getElementById('auditLogs').innerHTML = logs.map(l => `
+                <div style="padding:var(--spacing-sm) var(--spacing-md); border-bottom:1px solid var(--border-secondary); font-size:13px;">
+                    <strong>${l.action}</strong> by <strong>${l.user_email}</strong><br>
+                    <span style="color:var(--text-tertiary); font-size:11px;">${new Date(l.timestamp).toLocaleString()}</span>
+                    ${l.details ? `<div style="color:var(--text-secondary); font-size:12px;">${JSON.stringify(l.details)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function showAddUser() { document.getElementById('addUserModal').style.display='flex'; }
+        function closeModal() { document.getElementById('addUserModal').style.display='none'; }
+
+        async function createUser() {
+            const email = document.getElementById('newEmail').value;
+            const name = document.getElementById('newName').value;
+            const role = document.getElementById('newRole').value;
+            if(!email) { alert('Email required'); return; }
+            await api.adminCreateUser({email, full_name:name, role});
+            closeModal();
+            await loadUsers();
+        }
+
+        async function toggleRole(email, currentRole) {
+            const newRole = currentRole === 'admin' ? 'user' : 'admin';
+            if(!confirm(`Change ${email} to ${newRole}?`)) return;
+            await api.adminUpdateUserRole(email, newRole);
+            await loadUsers();
+        }
+
+        async function deleteUser(email) {
+            if(!confirm(`Delete ${email}?`)) return;
+            await api.adminDeleteUser(email);
+            await loadUsers();
+        }
+
+        init();
+    </script>
 </body>
 </html>

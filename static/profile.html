@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Selfmade Labs</title>
+    <link rel="stylesheet" href="/ui/css/theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-brand"><span class="material-icons-round">terminal</span> Selfmade Labs</div>
+            <nav class="sidebar-nav">
+                <a href="/ui/dashboard.html" class="nav-item"><span class="material-icons-round">dashboard</span> Dashboard</a>
+                <a href="/ui/services.html" class="nav-item"><span class="material-icons-round">dns</span> Services</a>
+                <a href="/ui/profile.html" class="nav-item active"><span class="material-icons-round">person</span> Profile</a>
+                <a href="/ui/settings.html" class="nav-item"><span class="material-icons-round">settings</span> Settings</a>
+                <div id="adminNav" style="display:none;"><a href="/ui/admin.html" class="nav-item" style="color:var(--error);"><span class="material-icons-round">admin_panel_settings</span> Admin Panel</a></div>
+            </nav>
+            <div class="sidebar-footer"><button class="btn btn-ghost" onclick="api.logout()" style="width:100%; justify-content:flex-start;"><span class="material-icons-round">logout</span> Logout</button></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1 style="margin:0; font-size:20px; font-weight:500;">Profile</h1>
+                <button id="themeToggle" class="btn btn-icon btn-ghost" onclick="toggleTheme()"><span class="material-icons-round">brightness_auto</span></button>
+            </header>
+
+            <div class="content">
+                <div style="max-width:800px; margin:0 auto;">
+                    <div class="card" style="margin-bottom:var(--spacing-lg);">
+                        <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-lg);">
+                            <img id="avatar" style="width:80px; height:80px; border-radius:50%;">
+                            <div><h2 id="fullName" style="margin:0; font-size:24px;"></h2><p id="email" style="margin:4px 0 0; color:var(--text-secondary);"></p><span id="role" class="badge"></span></div>
+                        </div>
+                        <div style="padding-top:var(--spacing-lg); border-top:1px solid var(--border-primary);">
+                            <label style="display:block; margin-bottom:var(--spacing-sm); font-weight:500;">Full Name</label>
+                            <input id="nameInput" type="text" style="margin-bottom:var(--spacing-md);">
+                            <button class="btn btn-primary" onclick="updateProfile()"><span class="material-icons-round">save</span> Save Changes</button>
+                        </div>
+                    </div>
+
+                    <div class="card"><h2 style="margin:0 0 var(--spacing-lg); font-size:18px;">Statistics</h2>
+                        <div class="card-grid" id="statsGrid"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/ui/js/theme.js"></script>
+    <script src="/ui/js/api.js"></script>
+    <script>
+        extractTokenFromURL();
+        if(!requireAuth()) throw new Error('Not authenticated');
+
+        async function init() {
+            const [user, stats] = await Promise.all([api.getProfile(), api.getUserStats()]);
+            if(user.role==='admin') document.getElementById('adminNav').style.display='block';
+
+            document.getElementById('fullName').textContent = user.full_name || 'User';
+            document.getElementById('email').textContent = user.email;
+            document.getElementById('role').textContent = user.role.toUpperCase();
+            document.getElementById('role').className = 'badge ' + (user.role==='admin' ? 'badge-error' : 'badge-success');
+            document.getElementById('nameInput').value = user.full_name || '';
+
+            if(user.avatar_url) document.getElementById('avatar').src = user.avatar_url;
+
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="card"><span class="material-icons-round" style="font-size:40px; color:var(--accent-primary);">science</span><div style="font-size:24px; font-weight:600;">${stats.labs_launched||0}</div><div style="color:var(--text-secondary);">Labs Launched</div></div>
+                <div class="card"><span class="material-icons-round" style="font-size:40px; color:var(--success);">dns</span><div style="font-size:24px; font-weight:600;">${stats.services_launched||0}</div><div style="color:var(--text-secondary);">Services Started</div></div>
+                <div class="card"><span class="material-icons-round" style="font-size:40px; color:var(--warning);">access_time</span><div style="font-size:24px; font-weight:600;">${Math.round(stats.total_runtime_minutes||0)}</div><div style="color:var(--text-secondary);">Total Minutes</div></div>
+            `;
+        }
+
+        async function updateProfile() {
+            const name = document.getElementById('nameInput').value;
+            await api.updateProfile({full_name: name});
+            location.reload();
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services - Selfmade Labs</title>
+    <link rel="stylesheet" href="/ui/css/theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-brand"><span class="material-icons-round">terminal</span> Selfmade Labs</div>
+            <nav class="sidebar-nav">
+                <a href="/ui/dashboard.html" class="nav-item"><span class="material-icons-round">dashboard</span> Dashboard</a>
+                <a href="/ui/services.html" class="nav-item active"><span class="material-icons-round">dns</span> Services</a>
+                <a href="/ui/profile.html" class="nav-item"><span class="material-icons-round">person</span> Profile</a>
+                <a href="/ui/settings.html" class="nav-item"><span class="material-icons-round">settings</span> Settings</a>
+                <div id="adminNav" style="display:none;"><a href="/ui/admin.html" class="nav-item" style="color:var(--error);"><span class="material-icons-round">admin_panel_settings</span> Admin Panel</a></div>
+            </nav>
+            <div class="sidebar-footer"><button class="btn btn-ghost" onclick="api.logout()" style="width:100%; justify-content:flex-start;"><span class="material-icons-round">logout</span> Logout</button></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1 style="margin:0; font-size:20px; font-weight:500;">Services</h1>
+                <button id="themeToggle" class="btn btn-icon btn-ghost" onclick="toggleTheme()"><span class="material-icons-round">brightness_auto</span></button>
+            </header>
+
+            <div class="content">
+                <div id="runningSection" style="margin-bottom:var(--spacing-xl); display:none;">
+                    <h2 style="font-size:18px; font-weight:500; margin-bottom:var(--spacing-md); display:flex; align-items:center; gap:var(--spacing-sm);"><span class="material-icons-round" style="color:var(--success);">play_circle</span> Running Services</h2>
+                    <div class="card-grid" id="runningGrid"></div>
+                </div>
+
+                <div><h2 style="font-size:18px; font-weight:500; margin-bottom:var(--spacing-md);">Service Catalog</h2>
+                    <div class="card-grid" id="catalogGrid"></div>
+                </div>
+
+                <div id="credentialsModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this) closeCredentials()">
+                    <div class="modal" onclick="event.stopPropagation()">
+                        <h2 style="margin:0 0 var(--spacing-lg); display:flex; justify-content:space-between; align-items:center;"><span id="modalTitle"></span><button class="btn btn-icon btn-ghost" onclick="closeCredentials()"><span class="material-icons-round">close</span></button></h2>
+                        <div id="modalContent"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/ui/js/theme.js"></script>
+    <script src="/ui/js/api.js"></script>
+    <script>
+        extractTokenFromURL();
+        if(!requireAuth()) throw new Error('Not authenticated');
+
+        async function init() {
+            const user = await api.getProfile();
+            if(user.role==='admin') document.getElementById('adminNav').style.display='block';
+            await Promise.all([loadRunning(), loadCatalog()]);
+            setInterval(loadRunning, 5000);
+        }
+
+        async function loadRunning() {
+            const services = await api.getServiceStatus();
+            const section = document.getElementById('runningSection');
+            const grid = document.getElementById('runningGrid');
+
+            if(!services || services.length===0) { section.style.display='none'; return; }
+
+            section.style.display='block';
+            grid.innerHTML = services.map(s => {
+                const icons = {mysql:'storage', postgresql:'storage', mongodb:'storage', redis:'memory', rabbitmq:'message'};
+                return `<div class="card">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:var(--spacing-md);">
+                        <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                            <span class="material-icons-round" style="font-size:40px; color:var(--success);">${icons[s.service]||'dns'}</span>
+                            <div><h3 style="margin:0; font-size:16px;">${s.service_name}</h3><p style="margin:4px 0 0; font-size:12px; color:var(--text-secondary);">Port: ${s.port}</p></div>
+                        </div>
+                        <span class="badge badge-success">Running</span>
+                    </div>
+                    <div style="display:flex; gap:var(--spacing-sm);">
+                        <button class="btn btn-primary" style="flex:1;" onclick="viewCredentials('${s.service}')"><span class="material-icons-round">visibility</span> View Credentials</button>
+                        <button class="btn btn-secondary" onclick="stopService('${s.service}')"><span class="material-icons-round">stop</span> Stop</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function loadCatalog() {
+            const catalog = await api.getServicesCatalog();
+            const icons = {mysql:'storage', postgresql:'storage', mongodb:'storage', redis:'memory', rabbitmq:'message'};
+            document.getElementById('catalogGrid').innerHTML = catalog.map(s => `
+                <div class="card">
+                    <div style="display:flex; align-items:center; gap:var(--spacing-md); margin-bottom:var(--spacing-md);">
+                        <span class="material-icons-round" style="font-size:40px; color:var(--accent-primary);">${icons[s.id]||'dns'}</span>
+                        <div style="flex:1;"><h3 style="margin:0; font-size:16px;">${s.name}</h3><p style="margin:4px 0 0; font-size:14px; color:var(--text-secondary);">${s.description}</p></div>
+                    </div>
+                    <button class="btn btn-primary" style="width:100%;" onclick="startService('${s.id}')"><span class="material-icons-round">play_arrow</span> Start Service</button>
+                </div>
+            `).join('');
+        }
+
+        async function startService(id) {
+            const btn = event.target.closest('button');
+            btn.disabled=true;
+            btn.innerHTML='<span class="material-icons-round">hourglass_empty</span> Starting...';
+            try {
+                await api.startService(id);
+                await loadRunning();
+                await loadCatalog();
+            } catch(e) { alert('Failed: '+(e.message||'Unknown')); }
+        }
+
+        async function stopService(id) {
+            const btn = event.target.closest('button');
+            btn.disabled=true;
+            btn.innerHTML='<span class="material-icons-round">hourglass_empty</span> Stopping...';
+            try {
+                await api.stopService(id);
+                await loadRunning();
+            } catch(e) { alert('Failed: '+(e.message||'Unknown')); }
+        }
+
+        async function viewCredentials(id) {
+            try {
+                const creds = await api.getServiceCredentials(id);
+                document.getElementById('modalTitle').textContent = creds.service_name + ' Credentials';
+                document.getElementById('modalContent').innerHTML = `
+                    <div style="background:var(--bg-tertiary); padding:var(--spacing-md); border-radius:var(--radius-md); margin-bottom:var(--spacing-md);">
+                        <strong>Host:</strong> ${creds.host}<br>
+                        <strong>Port:</strong> ${creds.port}<br>
+                        ${creds.username ? `<strong>Username:</strong> ${creds.username}<br>` : ''}
+                        ${creds.password ? `<strong>Password:</strong> <code>${creds.password}</code><br>` : ''}
+                        ${creds.database ? `<strong>Database:</strong> ${creds.database}<br>` : ''}
+                    </div>
+                    ${creds.connection_string ? `<div style="background:var(--bg-secondary); padding:var(--spacing-md); border-radius:var(--radius-md); font-family:monospace; font-size:12px; word-break:break-all;">${creds.connection_string}</div>` : ''}
+                `;
+                document.getElementById('credentialsModal').style.display='flex';
+            } catch(e) { alert('Failed to load credentials'); }
+        }
+
+        function closeCredentials() {
+            document.getElementById('credentialsModal').style.display='none';
+        }
+
+        init();
+    </script>
+</body>
+</html>

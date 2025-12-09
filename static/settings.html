@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Selfmade Labs</title>
+    <link rel="stylesheet" href="/ui/css/theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-brand"><span class="material-icons-round">terminal</span> Selfmade Labs</div>
+            <nav class="sidebar-nav">
+                <a href="/ui/dashboard.html" class="nav-item"><span class="material-icons-round">dashboard</span> Dashboard</a>
+                <a href="/ui/services.html" class="nav-item"><span class="material-icons-round">dns</span> Services</a>
+                <a href="/ui/profile.html" class="nav-item"><span class="material-icons-round">person</span> Profile</a>
+                <a href="/ui/settings.html" class="nav-item active"><span class="material-icons-round">settings</span> Settings</a>
+                <div id="adminNav" style="display:none;"><a href="/ui/admin.html" class="nav-item" style="color:var(--error);"><span class="material-icons-round">admin_panel_settings</span> Admin Panel</a></div>
+            </nav>
+            <div class="sidebar-footer"><button class="btn btn-ghost" onclick="api.logout()" style="width:100%; justify-content:flex-start;"><span class="material-icons-round">logout</span> Logout</button></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1 style="margin:0; font-size:20px; font-weight:500;">Settings</h1>
+                <button id="themeToggle" class="btn btn-icon btn-ghost" onclick="toggleTheme()"><span class="material-icons-round">brightness_auto</span></button>
+            </header>
+
+            <div class="content">
+                <div style="max-width:800px; margin:0 auto;">
+                    <div class="card" style="margin-bottom:var(--spacing-lg);">
+                        <h2 style="margin:0 0 var(--spacing-md); font-size:18px;">Appearance</h2>
+                        <label style="display:block; margin-bottom:var(--spacing-sm); font-weight:500;">Theme</label>
+                        <select id="themeSelect" onchange="changeTheme()" style="margin-bottom:var(--spacing-md);">
+                            <option value="auto">Auto (System)</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+
+                    <div class="card" style="margin-bottom:var(--spacing-lg);">
+                        <h2 style="margin:0 0 var(--spacing-md); font-size:18px;">Notifications</h2>
+                        <label style="display:flex; align-items:center; gap:var(--spacing-md); cursor:pointer;">
+                            <input type="checkbox" id="notifEnabled">
+                            <span>Enable notifications</span>
+                        </label>
+                        <button class="btn btn-primary" onclick="saveNotifSettings()" style="margin-top:var(--spacing-md);"><span class="material-icons-round">save</span> Save</button>
+                    </div>
+
+                    <div class="card">
+                        <h2 style="margin:0 0 var(--spacing-md); font-size:18px; color:var(--error);">Account Information</h2>
+                        <p style="margin-bottom:var(--spacing-md); color:var(--text-secondary);">OAuth Provider: <strong id="provider"></strong></p>
+                        <p style="color:var(--text-secondary);">Account created: <strong id="created"></strong></p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/ui/js/theme.js"></script>
+    <script src="/ui/js/api.js"></script>
+    <script>
+        extractTokenFromURL();
+        if(!requireAuth()) throw new Error('Not authenticated');
+
+        async function init() {
+            const user = await api.getProfile();
+            if(user.role==='admin') document.getElementById('adminNav').style.display='block';
+
+            document.getElementById('themeSelect').value = themeManager.getThemePreference();
+            document.getElementById('notifEnabled').checked = user.notifications_enabled !== false;
+            document.getElementById('provider').textContent = user.oauth_provider || 'Unknown';
+            document.getElementById('created').textContent = new Date(user.created_at).toLocaleDateString();
+        }
+
+        function changeTheme() {
+            themeManager.setTheme(document.getElementById('themeSelect').value);
+        }
+
+        async function saveNotifSettings() {
+            const enabled = document.getElementById('notifEnabled').checked;
+            await api.updateProfile({notifications_enabled: enabled});
+            alert('Settings saved!');
+        }
+
+        init();
+    </script>
+</body>
+</html>

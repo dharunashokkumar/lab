@@ -1,104 +1,299 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Selfmade Labs – Login</title>
-  <style>
-    body {
-      background: #0f172a;
-      color: #e5e7eb;
-      font-family: system-ui, sans-serif;
-      display: flex;
-      height: 100vh;
-      align-items: center;
-      justify-content: center;
-      margin: 0;
-    }
-    .card {
-      background: #020617;
-      padding: 28px;
-      border-radius: 16px;
-      width: 340px;
-      border: 1px solid #1f2937;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-    }
-    h1 {
-      margin: 0 0 6px;
-    }
-    .sub {
-      color: #9ca3af;
-      font-size: 0.85rem;
-      margin-bottom: 18px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #374151;
-      background: #020617;
-      color: #e5e7eb;
-      margin-bottom: 12px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      border-radius: 999px;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-      background: #22c55e;
-      color: #022c22;
-    }
-    .error {
-      color: #f87171;
-      font-size: 0.8rem;
-      display: none;
-      margin-top: 8px;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Selfmade Labs</h1>
-    <div class="sub">Admin / User Login</div>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in - Selfmade Labs</title>
 
-    <input id="username" placeholder="Username" />
-    <input id="password" type="password" placeholder="Password" />
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="/ui/css/theme.css">
 
-    <button onclick="login()">Login</button>
-    <div class="error" id="error">Invalid credentials</div>
-  </div>
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
 
-  <script>
-    const API = "http://127.0.0.1:8000";
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 
-    async function login() {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const error = document.getElementById("error");
-
-      error.style.display = "none";
-
-      try {
-        const res = await fetch(`${API}/auth/login`, {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ username, password })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          error.style.display = "block";
-          return;
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: var(--bg-secondary);
         }
 
-        localStorage.setItem("token", data.access_token);
-        window.location.href = "dashboard.html";
-      } catch {
-        error.style.display = "block";
-      }
-    }
-  </script>
+        .login-container {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            width: 100%;
+            max-width: 400px;
+            margin: var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+            font-size: 24px;
+            color: var(--accent-primary);
+        }
+
+        .logo .material-icons-round {
+            font-size: 32px;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin: 0 0 var(--spacing-xs);
+        }
+
+        .login-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .oauth-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .oauth-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-family: inherit;
+        }
+
+        .oauth-btn:hover {
+            background: var(--bg-hover);
+            box-shadow: var(--shadow-md);
+        }
+
+        .oauth-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: var(--spacing-lg) 0;
+            color: var(--text-tertiary);
+            font-size: 12px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .divider span {
+            padding: 0 var(--spacing-md);
+        }
+
+        .alert {
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-lg);
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background: var(--error-light);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .alert-info {
+            background: var(--accent-light);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-primary);
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: var(--spacing-lg);
+            right: var(--spacing-lg);
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                margin: var(--spacing-md);
+                padding: var(--spacing-lg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button id="themeToggle" class="btn btn-icon theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <span class="material-icons-round">brightness_auto</span>
+    </button>
+
+    <div class="login-container">
+        <!-- Header -->
+        <div class="login-header">
+            <div class="logo">
+                <span class="material-icons-round">terminal</span>
+                <span>Selfmade Labs</span>
+            </div>
+            <h1 class="login-title">Sign in</h1>
+            <p class="login-subtitle">Choose your sign-in method</p>
+        </div>
+
+        <!-- Error/Info Messages -->
+        <div id="errorMessage" class="alert alert-error" style="display: none;">
+            <span id="errorText"></span>
+        </div>
+
+        <div id="infoMessage" class="alert alert-info" style="display: none;">
+            <span id="infoText"></span>
+        </div>
+
+        <!-- OAuth Buttons -->
+        <div class="oauth-buttons">
+            <!-- Google OAuth -->
+            <a href="/auth/google" class="oauth-btn">
+                <svg viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                <span>Continue with Google</span>
+            </a>
+
+            <!-- GitHub OAuth -->
+            <a href="/auth/github" class="oauth-btn">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+                </svg>
+                <span>Continue with GitHub</span>
+            </a>
+        </div>
+
+        <!-- Divider -->
+        <div class="divider">
+            <span>Secure authentication via OAuth 2.0</span>
+        </div>
+
+        <!-- Footer -->
+        <div class="login-footer">
+            <p>
+                First user becomes admin automatically.<br>
+                Contact your administrator for access.
+            </p>
+        </div>
+    </div>
+
+    <!-- Theme Management -->
+    <script src="/ui/js/theme.js"></script>
+
+    <!-- Login Logic -->
+    <script>
+        // Check if user is already authenticated
+        const token = localStorage.getItem('selfmade_token');
+        if (token) {
+            window.location.href = '/ui/dashboard.html';
+        }
+
+        // Handle URL parameters (errors, session expired, etc.)
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        const message = urlParams.get('message');
+
+        const errorDiv = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const infoDiv = document.getElementById('infoMessage');
+        const infoText = document.getElementById('infoText');
+
+        if (error) {
+            const errorMessages = {
+                'session_expired': 'Your session has expired. Please sign in again.',
+                'oauth_failed': 'Authentication failed. Please try again.',
+                'callback_error': 'OAuth callback error. Please try again.',
+                'unauthorized': 'You are not authorized to access this resource.',
+                'invalid_token': 'Invalid or expired token. Please sign in again.'
+            };
+
+            errorText.textContent = errorMessages[error] || 'An error occurred. Please try again.';
+            errorDiv.style.display = 'block';
+        }
+
+        if (message) {
+            const infoMessages = {
+                'logout_success': 'You have been successfully logged out.',
+                'account_deleted': 'Your account has been deleted.',
+                'role_changed': 'Your role has been updated. Please sign in again.'
+            };
+
+            infoText.textContent = infoMessages[message] || message;
+            infoDiv.style.display = 'block';
+        }
+
+        // Clear URL parameters after displaying message
+        if (error || message) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Show loading state when OAuth button is clicked
+        document.querySelectorAll('.oauth-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                this.style.opacity = '0.6';
+                this.style.pointerEvents = 'none';
+
+                const originalText = this.querySelector('span').textContent;
+                this.querySelector('span').textContent = 'Redirecting...';
+
+                // Restore state after 3 seconds if redirect fails
+                setTimeout(() => {
+                    this.style.opacity = '1';
+                    this.style.pointerEvents = 'auto';
+                    this.querySelector('span').textContent = originalText;
+                }, 3000);
+            });
+        });
+    </script>
 </body>
 </html>
