@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Selfmade Labs – Admin Panel</title>
+  <style>
+    body {
+      background: #020617;
+      color: #e5e7eb;
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 24px;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    a {
+      color: #60a5fa;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1.8fr;
+      gap: 20px;
+    }
+    .card {
+      background: #020617;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      padding: 16px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+    }
+    button {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      background: #22c55e;
+      color: #022c22;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      border-bottom: 1px solid #1f2937;
+      padding: 6px;
+      text-align: left;
+    }
+    th {
+      color: #9ca3af;
+      font-weight: 500;
+    }
+    .error {
+      color: #ef4444;
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
+    .ok {
+      color: #4ade80;
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div>
+      <h2>Admin Panel</h2>
+      <div id="adminInfo" style="font-size:0.85rem;color:#9ca3af;"></div>
+    </div>
+    <div>
+      <a href="/ui/dashboard.html">← Back to Dashboard</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Create User</h3>
+      <input id="username" placeholder="Username" />
+      <input id="password" type="password" placeholder="Password" />
+      <select id="role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button onclick="createUser()">Create</button>
+      <div id="msg" class="error" style="display:none;"></div>
+      <div id="ok" class="ok" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h3>Existing Users</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Created At</th>
+          </tr>
+        </thead>
+        <tbody id="userRows">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      window.location.href = "/ui/login.html";
+    }
+
+    function authHeaders() {
+      return {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      };
+    }
+
+    async function loadAdminInfo() {
+      try {
+        const res = await fetch("/me", { headers: authHeaders() });
+        if (!res.ok) {
+          window.location.href = "/ui/login.html";
+          return;
+        }
+        const data = await res.json();
+        document.getElementById("adminInfo").innerText =
+          `Logged in as ${data.username} (${data.role})`;
+      } catch {
+        window.location.href = "/ui/login.html";
+      }
+    }
+
+    async function loadUsers() {
+      const tbody = document.getElementById("userRows");
+      tbody.innerHTML = "";
+      try {
+        const res = await fetch("/admin/users", { headers: authHeaders() });
+        if (res.status === 403 || res.status === 401) {
+          alert("Admin access required");
+          window.location.href = "/ui/dashboard.html";
+          return;
+        }
+        const data = await res.json();
+        data.forEach(u => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${u.username}</td>
+            <td>${u.role}</td>
+            <td>${u.created_at || ""}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function createUser() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const role = document.getElementById("role").value;
+      const msg = document.getElementById("msg");
+      const ok = document.getElementById("ok");
+
+      msg.style.display = "none";
+      ok.style.display = "none";
+
+      if (!username || !password) {
+        msg.innerText = "Username and password required.";
+        msg.style.display = "block";
+        return;
+      }
+
+      try {
+        const res = await fetch("/admin/create-user", {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ username, password, role })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          msg.innerText = data.detail || "Error creating user";
+          msg.style.display = "block";
+          return;
+        }
+
+        ok.innerText = `User ${data.username} created as ${data.role}`;
+        ok.style.display = "block";
+        document.getElementById("username").value = "";
+        document.getElementById("password").value = "";
+        loadUsers();
+      } catch (e) {
+        msg.innerText = "Network error";
+        msg.style.display = "block";
+      }
+    }
+
+    loadAdminInfo();
+    loadUsers();
+  </script>
+</body>
+</html>

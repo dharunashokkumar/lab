@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
-
+from typing import List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
@@ -89,7 +89,26 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
     return user
 
+def create_user(username: str, password: str, role: str = "user"):
+    existing = get_user(username)
+    if existing:
+        raise HTTPException(status_code=400, detail="User already exists")
 
+    users.insert_one({
+        "username": username,
+        "password": hash_password(password),
+        "role": role,
+        "created_at": datetime.utcnow()
+    })
+
+    return {"message": "User created", "username": username, "role": role}
+
+
+def list_users():
+    # Don't return password hashes
+    cursor = users.find({}, {"_id": 0, "username": 1, "role": 1, "created_at": 1})
+    return list(cursor)
+    
 def get_current_admin(user: dict = Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(
