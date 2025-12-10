@@ -27,33 +27,34 @@ RUN curl -L https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 
     -o /usr/local/bin/ttyd && \
     chmod +x /usr/local/bin/ttyd
 
-# Create student user with sudo privileges
-RUN useradd -m -s /bin/bash student && \
-    echo "student:student123" | chpasswd && \
-    echo "student ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# Create labuser with sudo privileges
+RUN useradd -m -s /bin/bash labuser && \
+    echo "labuser:labpassword123" | chpasswd && \
+    echo "labuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Set up student home directory
-RUN mkdir -p /home/student/{projects,downloads} && \
-    chown -R student:student /home/student
+# Set up labuser home directory
+RUN mkdir -p /home/labuser/{projects,downloads} && \
+    chown -R labuser:labuser /home/labuser
 
 # Create welcome message
-RUN echo '#!/bin/bash' > /home/student/.bashrc && \
-    echo 'echo "╔════════════════════════════════════════════════════════════╗"' >> /home/student/.bashrc && \
-    echo 'echo "║        Welcome to Selfmade Labs - Ubuntu Environment      ║"' >> /home/student/.bashrc && \
-    echo 'echo "╚════════════════════════════════════════════════════════════╝"' >> /home/student/.bashrc && \
-    echo 'echo ""' >> /home/student/.bashrc && \
-    echo 'echo "📁 Your files are in: /home/student"' >> /home/student/.bashrc && \
-    echo 'echo "🔧 Installed tools: git, python3, node, vim, nano, htop"' >> /home/student/.bashrc && \
-    echo 'echo "💾 All files persist across lab sessions!"' >> /home/student/.bashrc && \
-    echo 'echo ""' >> /home/student/.bashrc && \
-    echo 'PS1="\[\033[01;32m\]\u@selfmade-ubuntu\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "' >> /home/student/.bashrc && \
-    chown student:student /home/student/.bashrc
+RUN echo '#!/bin/bash' > /home/labuser/.bashrc && \
+    echo 'echo "╔════════════════════════════════════════════════════════════╗"' >> /home/labuser/.bashrc && \
+    echo 'echo "║        Welcome to Selfmade Labs - Ubuntu Environment      ║"' >> /home/labuser/.bashrc && \
+    echo 'echo "╚════════════════════════════════════════════════════════════╝"' >> /home/labuser/.bashrc && \
+    echo 'echo ""' >> /home/labuser/.bashrc && \
+    echo 'echo "👤 User: $USER (Email: ${USER_EMAIL:-Not Set})"' >> /home/labuser/.bashrc && \
+    echo 'echo "📁 Your files are in: /home/labuser"' >> /home/labuser/.bashrc && \
+    echo 'echo "🔧 Installed tools: git, python3, node, vim, nano, htop"' >> /home/labuser/.bashrc && \
+    echo 'echo "💾 All files persist across lab sessions!"' >> /home/labuser/.bashrc && \
+    echo 'echo ""' >> /home/labuser/.bashrc && \
+    echo 'PS1="\[\033[01;32m\]\u@selfmade-ubuntu\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "' >> /home/labuser/.bashrc && \
+    chown labuser:labuser /home/labuser/.bashrc
 
 # Set working directory
-WORKDIR /home/student
+WORKDIR /home/labuser
 
-# Switch to student user
-USER student
+# Switch to labuser
+USER labuser
 
 # Expose ttyd port
 EXPOSE 7681

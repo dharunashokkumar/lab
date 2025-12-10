@@ -4,7 +4,7 @@ import threading
 import logging
 from datetime import datetime
 from app.db import lab_instances as instances, lab_catalog, service_instances as services
-from app.volume_manager import create_user_volume_if_not_exists, get_user_volume_name
+from app.volume_manager import create_user_volume_if_not_exists, get_user_volume_name, get_username_from_email
 
 logger = logging.getLogger(__name__)
 
@@ -57,17 +57,24 @@ def start_lab(user_email: str, lab_id: str):
     except RuntimeError as e:
         return {"error": f"Failed to create user volume: {str(e)}"}
 
+    # Extract username for dynamic mount path and environment variable
+    username = get_username_from_email(user_email)
+
     # Allocate port based on lab type
     port = random.randint(8000, 9000)  # Expanded port range for web terminals
-    container = f"lab_{user_email.split('@')[0]}_{lab_id}_{random.randint(1000,9999)}"
+    container = f"lab_{username}_{lab_id}_{random.randint(1000,9999)}"
 
     # Build Docker command with shared volume and resource limits
     cmd = [
         "docker", "run", "-d",
         "--name", container,
 
-        # CRITICAL: Mount user's persistent volume
-        "-v", f"{volume_name}:/home/student",
+        # CRITICAL: Mount user's persistent volume to /home/labuser
+        "-v", f"{volume_name}:/home/labuser",
+
+        # Pass username as environment variable for future dynamic user creation
+        "-e", f"USERNAME={username}",
+        "-e", f"USER_EMAIL={user_email}",
 
         # Resource limits (CPU and memory)
         "--cpus", RESOURCE_LIMITS["cpus"],

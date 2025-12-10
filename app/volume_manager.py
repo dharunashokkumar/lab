@@ -11,6 +11,27 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
+def get_username_from_email(user_email: str) -> str:
+    """
+    Extract clean username from email for use as Linux username.
+
+    Args:
+        user_email: User's email address
+
+    Returns:
+        Sanitized username suitable for Linux usernames
+
+    Example:
+        dharuna457@gmail.com -> dharuna457
+        john.doe@company.com -> john_doe
+    """
+    # Extract username part before @ and sanitize for Linux compatibility
+    username = user_email.split('@')[0]
+    # Replace dots and dashes with underscores (Linux usernames requirement)
+    username = username.replace('.', '_').replace('-', '_')
+    return username
+
+
 def get_user_volume_name(user_email: str) -> str:
     """
     Generate consistent volume name for user.
@@ -25,8 +46,8 @@ def get_user_volume_name(user_email: str) -> str:
         dharuna457@gmail.com -> user_dharuna457_home
         john.doe@example.com -> user_john_doe_home
     """
-    # Extract username from email and sanitize
-    username = user_email.split('@')[0].replace('.', '_').replace('-', '_')
+    # Use the shared username extraction function
+    username = get_username_from_email(user_email)
     return f"user_{username}_home"
 
 
