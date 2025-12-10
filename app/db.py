@@ -26,30 +26,30 @@ if lab_catalog.count_documents({}) == 0:
     lab_catalog.insert_many([
         {
             "id": "ubuntu-ssh",
-            "name": "Essentials Lab",
+            "name": "Ubuntu Essentials Lab",
             "icon": "terminal",
             "type": "machine",
-            "description": "Ubuntu 22.04 with SSH access",
-            "image": "ubuntu-ssh-lab",
-            "port": 22
+            "description": "Ubuntu 22.04 with browser terminal, Python, Node.js, and dev tools",
+            "image": "selfmade/ubuntu-ssh:latest",
+            "port": 7681  # ttyd web terminal
         },
         {
             "id": "kali-linux",
-            "name": "Kali Linux",
+            "name": "Kali Linux Lab",
             "icon": "security",
             "type": "machine",
-            "description": "Pentesting environment",
-            "image": "kalilinux/kali-rolling",
-            "port": 22
+            "description": "Kali Linux pentesting environment with browser terminal",
+            "image": "selfmade/kali-linux:latest",
+            "port": 7681  # ttyd web terminal
         },
         {
             "id": "n8n",
-            "name": "n8n Lab",
+            "name": "n8n Automation Lab",
             "icon": "hub",
             "type": "machine",
-            "description": "Workflow automation",
+            "description": "n8n workflow automation with browser UI",
             "image": "n8nio/n8n",
-            "port": 5678
+            "port": 5678  # n8n web UI
         }
     ])
     print("[OK] Lab catalog seeded")

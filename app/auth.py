@@ -11,7 +11,8 @@ from jose import JWTError, jwt
 from authlib.integrations.starlette_client import OAuth
 from dotenv import load_dotenv
 
-from app.db import users, audit_logs
+from app.db import users, audit_logs, lab_instances, service_instances
+from app.volume_manager import delete_user_volume
 
 # Load environment variables
 load_dotenv()
@@ -266,22 +267,56 @@ def update_user_role(email: str, new_role: str, admin_user: dict):
 
 def delete_user(email: str, admin_user: dict):
     """Delete user (admin only)"""
+    import subprocess
+
     # Prevent admin from deleting themselves
     if email == admin_user["email"]:
         raise HTTPException(status_code=400, detail="Cannot delete your own account")
 
-    result = users.delete_one({"email": email})
-
-    if result.deleted_count == 0:
+    # Check if user exists
+    user = users.find_one({"email": email})
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Stop and remove all running lab containers for this user
+    running_labs = list(lab_instances.find({"user_email": email, "status": "running"}))
+    for lab in running_labs:
+        container = lab.get("container")
+        if container:
+            try:
+                subprocess.run(["docker", "stop", container], check=False, capture_output=True)
+                subprocess.run(["docker", "rm", container], check=False, capture_output=True)
+            except Exception as e:
+                print(f"Warning: Failed to stop/remove container {container}: {e}")
+
+    # Delete all lab instances for this user from database
+    lab_instances.delete_many({"user_email": email})
+
+    # Stop and remove all service containers for this user
+    # Note: Services are shared, so we only delete database records, not containers
+    service_instances.delete_many({"user_email": email})
+
+    # Delete user's persistent volume (CRITICAL: This deletes all user data!)
+    volume_deleted = delete_user_volume(email)
+
+    # Delete user from database
+    result = users.delete_one({"email": email})
 
     # Log action
     audit_logs.insert_one({
         "user_email": admin_user["email"],
         "action": "user_deleted",
         "target": email,
-        "details": {},
+        "details": {
+            "labs_removed": len(running_labs),
+            "volume_deleted": volume_deleted
+        },
         "timestamp": datetime.utcnow()
     })
 
-    return {"message": "User deleted", "email": email}
+    return {
+        "message": "User deleted successfully",
+        "email": email,
+        "labs_removed": len(running_labs),
+        "volume_deleted": volume_deleted
+    }

@@ -1,9 +1,9 @@
-FROM ubuntu:22.04
+FROM kalilinux/kali-rolling
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install essential tools and ttyd
+# Update package lists and install essential tools
 RUN apt update && apt install -y \
     sudo \
     curl \
@@ -18,8 +18,20 @@ RUN apt update && apt install -y \
     python3 \
     python3-pip \
     python3-venv \
-    nodejs \
-    npm \
+    # Kali-specific pentesting tools
+    kali-tools-top10 \
+    nmap \
+    metasploit-framework \
+    sqlmap \
+    john \
+    hashcat \
+    hydra \
+    aircrack-ng \
+    wireshark \
+    burpsuite \
+    nikto \
+    gobuster \
+    dirb \
     && rm -rf /var/lib/apt/lists/*
 
 # Install ttyd (web-based terminal)
@@ -33,20 +45,23 @@ RUN useradd -m -s /bin/bash student && \
     echo "student ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Set up student home directory
-RUN mkdir -p /home/student/{projects,downloads} && \
+RUN mkdir -p /home/student/{projects,downloads,tools,wordlists} && \
     chown -R student:student /home/student
 
-# Create welcome message
+# Create welcome message with Kali tools info
 RUN echo '#!/bin/bash' > /home/student/.bashrc && \
     echo 'echo "╔════════════════════════════════════════════════════════════╗"' >> /home/student/.bashrc && \
-    echo 'echo "║        Welcome to Selfmade Labs - Ubuntu Environment      ║"' >> /home/student/.bashrc && \
+    echo 'echo "║      Welcome to Selfmade Labs - Kali Linux Environment    ║"' >> /home/student/.bashrc && \
     echo 'echo "╚════════════════════════════════════════════════════════════╝"' >> /home/student/.bashrc && \
     echo 'echo ""' >> /home/student/.bashrc && \
     echo 'echo "📁 Your files are in: /home/student"' >> /home/student/.bashrc && \
-    echo 'echo "🔧 Installed tools: git, python3, node, vim, nano, htop"' >> /home/student/.bashrc && \
+    echo 'echo "🔧 Pentesting tools: nmap, metasploit, sqlmap, john, hashcat"' >> /home/student/.bashrc && \
+    echo 'echo "🌐 Network tools: hydra, aircrack-ng, wireshark, burpsuite"' >> /home/student/.bashrc && \
     echo 'echo "💾 All files persist across lab sessions!"' >> /home/student/.bashrc && \
     echo 'echo ""' >> /home/student/.bashrc && \
-    echo 'PS1="\[\033[01;32m\]\u@selfmade-ubuntu\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "' >> /home/student/.bashrc && \
+    echo 'echo "💡 Quick start: nmap -sV <target>, msfconsole, sqlmap -u <url>"' >> /home/student/.bashrc && \
+    echo 'echo ""' >> /home/student/.bashrc && \
+    echo 'PS1="\[\033[01;31m\]\u@kali-linux\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "' >> /home/student/.bashrc && \
     chown student:student /home/student/.bashrc
 
 # Set working directory
@@ -59,7 +74,4 @@ USER student
 EXPOSE 7681
 
 # Start ttyd with bash terminal
-# -W flag enables writable mode (allows terminal input)
-# -p 7681 sets the port
-# bash starts the bash shell
 CMD ["ttyd", "-p", "7681", "-W", "bash"]

@@ -282,21 +282,42 @@
                                 <span class="material-icons-round" style="font-size: 40px; color: var(--success);">terminal</span>
                                 <div>
                                     <h3 style="margin: 0; font-size: 16px; font-weight: 500;">${lab.lab_name}</h3>
-                                    <p style="margin: 4px 0 0; font-size: 12px; color: var(--text-secondary);">Port: ${lab.port}</p>
+                                    <p style="margin: 4px 0 0; font-size: 12px; color: var(--text-secondary);">
+                                        Port: ${lab.port} ${lab.volume ? '• Volume: ' + lab.volume : ''}
+                                    </p>
                                 </div>
                             </div>
                             <span class="badge badge-success">Running</span>
                         </div>
 
+                        ${lab.access_url ? `
                         <div style="background: var(--bg-tertiary); padding: var(--spacing-sm); border-radius: var(--radius-sm); font-family: monospace; font-size: 12px; margin-bottom: var(--spacing-md); display: flex; justify-content: space-between; align-items: center;">
-                            <code>ssh student@127.0.0.1 -p ${lab.port}</code>
-                            <button class="btn btn-ghost btn-icon" style="width: 24px; height: 24px;" onclick="copyToClipboard('ssh student@127.0.0.1 -p ${lab.port}')" title="Copy">
+                            <code>${lab.access_url}</code>
+                            <button class="btn btn-ghost btn-icon" style="width: 24px; height: 24px;" onclick="copyToClipboard('${lab.access_url}')" title="Copy URL">
                                 <span class="material-icons-round" style="font-size: 16px;">content_copy</span>
                             </button>
                         </div>
+                        ` : ''}
+
+                        ${lab.resources ? `
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                            <span class="material-icons-round" style="font-size: 14px; vertical-align: middle;">memory</span>
+                            CPU: ${lab.resources.cpus} cores • RAM: ${lab.resources.memory}
+                        </div>
+                        ` : ''}
 
                         <div style="display: flex; gap: var(--spacing-sm);">
-                            <button class="btn btn-secondary" style="flex: 1;" onclick="stopLab('${lab.lab}')">
+                            ${lab.access_type === 'web_terminal' || lab.access_type === 'web' ? `
+                            <button class="btn btn-primary" style="flex: 1;" onclick="openLabTerminal('${lab.lab}', '${lab.access_url || 'http://localhost:' + lab.port}')">
+                                <span class="material-icons-round" style="font-size: 18px;">open_in_new</span>
+                                Open Terminal
+                            </button>
+                            ` : `
+                            <div style="background: var(--bg-tertiary); padding: var(--spacing-sm); border-radius: var(--radius-sm); font-family: monospace; font-size: 12px; flex: 1;">
+                                <code>ssh student@127.0.0.1 -p ${lab.port}</code>
+                            </div>
+                            `}
+                            <button class="btn btn-secondary" onclick="stopLab('${lab.lab}')">
                                 <span class="material-icons-round" style="font-size: 18px;">stop</span>
                                 Stop
                             </button>
@@ -496,6 +517,21 @@
                     btn.innerHTML = '<span class="material-icons-round" style="font-size: 18px;">stop</span> Stop';
                 }
             }
+        }
+
+        // Open Lab Terminal in New Window
+        function openLabTerminal(labId, accessUrl) {
+            // Open lab terminal in new window with appropriate size
+            const width = 1200;
+            const height = 800;
+            const left = (window.screen.width - width) / 2;
+            const top = (window.screen.height - height) / 2;
+
+            window.open(
+                accessUrl,
+                `lab_${labId}`,
+                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+            );
         }
 
         // Utilities
